@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { ContentCommandSchema, LayoutSaveSchema, UiCommandSchema } from '../../src/core/messaging';
 import {
   LIMITS,
   SettingsSchema,
@@ -85,5 +86,27 @@ describe('SettingsSchema', () => {
   it('keeps an explicit default theme id', () => {
     const settings = SettingsSchema.parse({ defaultThemeId: 'builtin:dark' });
     expect(settings.defaultThemeId).toBe('builtin:dark');
+  });
+});
+
+describe('edit-mode messages', () => {
+  it('accepts the start-edit UI command and edit-start content command', () => {
+    expect(
+      UiCommandSchema.safeParse({ type: 'start-edit', url: 'https://example.com/', tabId: 3 })
+        .success,
+    ).toBe(true);
+    expect(ContentCommandSchema.safeParse({ type: 'edit-start' }).success).toBe(true);
+  });
+
+  it('bounds the layout-save payload', () => {
+    const valid = {
+      type: 'layout-save',
+      order: ['lyrics', 'comments'],
+      hidden: ['comments'],
+      contentWidthPx: 720,
+    };
+    expect(LayoutSaveSchema.safeParse(valid).success).toBe(true);
+    expect(LayoutSaveSchema.safeParse({ ...valid, contentWidthPx: 300 }).success).toBe(false);
+    expect(LayoutSaveSchema.safeParse({ ...valid, order: ['x'.repeat(65)] }).success).toBe(false);
   });
 });

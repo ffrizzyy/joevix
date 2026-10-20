@@ -132,6 +132,18 @@ export function App() {
     await load();
   }
 
+  async function startEdit(): Promise<void> {
+    if (!url) return;
+    setBusy(true);
+    const response = await send({ type: 'start-edit', url, tabId });
+    setBusy(false);
+    if (!response.ok) {
+      setNotice({ kind: 'error', text: response.error });
+      return;
+    }
+    window.close();
+  }
+
   return (
     <main class="app">
       <header class="header">
@@ -255,9 +267,16 @@ export function App() {
             <button
               type="button"
               class="btn"
-              disabled
-              title={t('editUnavailable')}
+              disabled={busy || !state.config.enabled || !state.adapterAvailable}
+              title={
+                !state.config.enabled
+                  ? t('editNeedsEnabled')
+                  : state.adapterAvailable
+                    ? t('editLayout')
+                    : t('editUnavailable')
+              }
               aria-describedby="edit-hint"
+              onClick={() => void startEdit()}
             >
               {t('editLayout')}
             </button>

@@ -5,17 +5,20 @@ import { getBuiltinTheme, systemTheme } from '../core/theme/builtins';
 import { allThemes, findTheme } from '../core/theme/resolve';
 import {
   ContentHelloSchema,
+  LayoutSaveSchema,
   SectionReportSchema,
   UiCommandSchema,
   fail,
   ok,
   type ApplyPayload,
   type Diagnostics,
+  type LayoutSave,
   type Result,
   type SectionReport,
   type SiteState,
   type UiCommand,
 } from '../core/messaging';
+import { resolveHidden, resolveOrder } from '../core/layout/sections';
 import {
   SCHEMA_VERSION,
   STORAGE_KEYS,
@@ -130,6 +133,18 @@ async function sendToTab(tabId: number | undefined, message: unknown): Promise<b
   try {
     await browser.tabs.sendMessage(tabId, message);
     return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Like `sendToTab`, but reports whether the content script actually started. */
+async function startEditInTab(tabId: number): Promise<boolean> {
+  try {
+    const response = (await browser.tabs.sendMessage(tabId, { type: 'edit-start' })) as
+      | { ok?: boolean }
+      | undefined;
+    return response?.ok === true;
   } catch {
     return false;
   }
@@ -316,6 +331,31 @@ async function handleUi(
       return ok({ reset: true });
     }
 
+    case 'start-edit': {
+      const parsed = parseSiteUrl(command.url);
+      if (!parsed) return fail('This page cannot be edited.');
+      if (command.tabId === undefined) return fail('Open a page first.');
+
+      const store = await readStore();
+      const config = store.sites[parsed.siteId];
+      if (!config || !config.enabled || !store.settings.enabledEverywhere) {
+        return fail('Turn Joevix on for this site first.');
+      }
+      if (!adapterForUrl(command.url)) return fail('This page has no layout adapter.');
+      if (!(await hasPermission(parsed.originPattern))) {
+        return fail('Joevix needs access to this site.');
+      }
+
+      let started = await startEditInTab(command.tabId);
+      if (!started) {
+        const injected = await inject(command.tabId);
+        if (!injected) return fail('This page cannot be edited right now.');
+        started = await startEditInTab(command.tabId);
+      }
+      if (!started) return fail('This page cannot be edited right now.');
+      return ok({ started: true });
+    }
+
     case 'set-enabled-everywhere': {
       const store = await readStore();
       await writeSettings({ ...store.settings, enabledEverywhere: command.enabled });
@@ -460,6 +500,46 @@ async function handleUi(
   }
 }
 
+async function handleLayoutSave(
+  sender: Browser.runtime.MessageSender,
+  data: LayoutSave,
+): Promise<Result<{ saved: true }>> {
+  const parsed = parseSiteUrl(sender.url);
+  if (!parsed) return fail('This page cannot be saved.');
+
+  const adapter = adapterForUrl(sender.url);
+  if (!adapter) return fail('This page has no layout adapter.');
+
+  const store = await readStore();
+  const existing = store.sites[parsed.siteId];
+  if (!existing || !existing.enabled || !store.settings.enabledEverywhere) {
+    return fail('Turn Joevix on for this site first.');
+  }
+
+  const keys = adapter.sections.map((section) => section.key);
+  const order = resolveOrder(keys, data.order);
+  const hidden = resolveHidden(order, data.hidden);
+  // An order equal to the adapter declaration means "no custom order". Storing
+  // [] keeps the CSS order rules off until the user actually moves something,
+  // so undeclared siblings are never rearranged by accident.
+  const naturalOrder =
+    order.length === keys.length && order.every((key, index) => key === keys[index]);
+
+  await putSite({
+    ...existing,
+    order: naturalOrder ? [] : order,
+    hidden,
+    contentWidthPx: data.contentWidthPx,
+    adapterId: adapter.id,
+    adapterVersion: adapter.schemaVersion,
+    updatedAt: Date.now(),
+  });
+
+  // Other tabs for this site should show the new layout immediately.
+  await syncAllTabs();
+  return ok({ saved: true });
+}
+
 async function handleHello(
   sender: Browser.runtime.MessageSender,
 ): Promise<Result<ApplyPayload | null>> {
@@ -527,6 +607,14 @@ export default defineBackground(() => {
       void handleHello(sender)
         .then(sendResponse)
         .catch(() => sendResponse(fail('Could not load settings.')));
+      return true;
+    }
+
+    const layout = LayoutSaveSchema.safeParse(message);
+    if (layout.success) {
+      void handleLayoutSave(sender, layout.data)
+        .then(sendResponse)
+        .catch((error) => sendResponse(fail(toMessage(error))));
       return true;
     }
 

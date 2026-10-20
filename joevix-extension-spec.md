@@ -755,6 +755,12 @@ Declared content scripts require host permission at install time, which would me
 
 Deferred ideas (not committed): schedules (FR-11), element picker for adapters (FR-36), sync (FR-42), more layout presets, additional languages.
 
+**Implementation note (M5):** FR-24 (single / two column / focus presets) and the spacing half
+of FR-25 are deferred. The shipped editor covers FR-20, 21, 22, 23, 25 (reading width), and 26:
+outlines, drag and keyboard reorder, hide/show, undo/redo, and the per-site reading width. A
+preset needs a cross-site definition that does not guess which sections are secondary; hiding
+arbitrary content would violate NFR-03. See `docs/layout-editing.md`.
+
 ---
 
 ## 12. Release Checklist

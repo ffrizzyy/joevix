@@ -78,9 +78,10 @@ describe('buildLayoutCss', () => {
       containerSupportsOrder: true,
       containerSelector: 'main',
     });
-    expect(css).toContain('main { display: flex !important; flex-direction: column !important; }');
     expect(css).toContain('.related { order: 0 !important; }');
     expect(css).toContain('.lyrics { order: 1 !important; }');
+    // The container's own display must not be rewritten.
+    expect(css).not.toContain('display:');
   });
 
   it('skips unsafe selectors instead of writing them', () => {
@@ -89,6 +90,49 @@ describe('buildLayoutCss', () => {
       hidden: ['bad'],
       selectors: { bad: 'div { color: red }' },
       containerSupportsOrder: true,
+    });
+    expect(css).toBe('');
+  });
+
+  it('scopes every rule when a scope is given', () => {
+    const css = buildLayoutCss({
+      order: ['related', 'lyrics'],
+      hidden: ['related'],
+      selectors,
+      containerSupportsOrder: true,
+      containerSelector: 'main',
+      scope: 'html[data-joevix="on"]',
+      contentWidthPx: 720,
+    });
+    const lines = css.split('\n');
+    expect(lines.every((line) => line.startsWith('html[data-joevix="on"] '))).toBe(true);
+    expect(css).toContain('html[data-joevix="on"] main { max-width: 720px');
+    expect(css).toContain('html[data-joevix="on"] .lyrics { order: 1 !important; }');
+    expect(css).toContain('html[data-joevix="on"] .related { display: none !important; }');
+  });
+
+  it('applies a reading width even when order is unsupported', () => {
+    const css = buildLayoutCss({
+      order: ['lyrics'],
+      hidden: [],
+      selectors,
+      containerSupportsOrder: false,
+      containerSelector: 'main',
+      contentWidthPx: 600,
+    });
+    expect(css).toContain('main { max-width: 600px !important;');
+    expect(css).not.toContain('order:');
+    expect(css).not.toContain('display: flex');
+  });
+
+  it('ignores an out-of-range width', () => {
+    const css = buildLayoutCss({
+      order: [],
+      hidden: [],
+      selectors,
+      containerSupportsOrder: false,
+      containerSelector: 'main',
+      contentWidthPx: 5000,
     });
     expect(css).toBe('');
   });

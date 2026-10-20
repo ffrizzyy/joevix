@@ -14,17 +14,17 @@ The full specification is in [`joevix-extension-spec.md`](./joevix-extension-spe
 | M2        | Per-origin permissions, runtime registration, revocation, reset, cross-tab sync      | Done    |
 | M3        | Color wheel, contrast matrix, custom themes                                          | Done    |
 | M4        | Site adapters, build-time validation, section detection                              | Done    |
-| M5        | Layout editing (reorder, hide, undo)                                                 | Planned |
+| M5        | Layout editing (reorder, hide, undo)                                                 | Done    |
 | M6        | Import/export, delete-all, privacy panel, global off                                 | Done    |
 | M7        | Accessibility, usability, E2E, hardening                                             | Planned |
 
 Known gaps in the current build:
 
-- Layout editing (M5). Adapters and section detection ship for Genius lyric pages, but the
-  **Edit layout** button stays disabled until the editor lands.
+- Layout presets (FR-24) and the spacing half of FR-25 are not in this build. M5 ships edit
+  mode, drag and keyboard reorder, hide/show, 20-step undo/redo, and the per-site reading width.
 - The first-run welcome card (spec 7.1) is not drawn yet; the popup opens straight to the
   per-site enable prompt.
-- Playwright end-to-end tests are not wired up yet (unit coverage is 112 tests).
+- Playwright end-to-end tests are not wired up yet (unit coverage is 137 tests).
 
 ## Requirements
 
@@ -69,6 +69,10 @@ popup / options  --typed, Zod-validated messages-->  service worker
   `content_scripts: []`, so the extension has no standing access to any site (spec 8.3).
 - **Theming is CSS custom properties** scoped under `html[data-joevix="on"]`, applied through a
   constructed stylesheet. Reset removes one sheet and one attribute.
+- **Layout is CSS only.** Edit mode outlines adapter sections in an open shadow root, then saves
+  `order`, `hidden`, and `contentWidthPx` per site. Sections move through CSS `order` only when
+  the adapter container is already flex or grid; no node is ever moved (ADR-6). Reorder, hide,
+  and width changes have a 20-step undo history until **Done** is pressed.
 - **Custom themes** are edited against a live preview pushed to open Joevix pages. Cancel calls
   `end-preview` and restores each site's saved theme; Save writes the theme and resyncs every tab.
 - **No network code.** ESLint bans `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`,
@@ -88,5 +92,5 @@ src/core/          pure TypeScript: model, color, contrast, css, site, layout, s
 src/ui/            shared tokens and helpers
 src/adapters/      bundled per-site adapters (JSON + registry)
 tests/unit/        Vitest
-docs/              privacy policy, adapter guide
+docs/              privacy policy, adapter guide, layout editing
 ```

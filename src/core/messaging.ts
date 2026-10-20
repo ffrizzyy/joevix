@@ -39,6 +39,7 @@ export const UiCommandSchema = z.discriminatedUnion('type', [
     tabId: TabIdSchema,
   }),
   z.object({ type: z.literal('reset-site'), url: UrlSchema, tabId: TabIdSchema }),
+  z.object({ type: z.literal('start-edit'), url: UrlSchema, tabId: TabIdSchema }),
   z.object({ type: z.literal('set-enabled-everywhere'), enabled: z.boolean() }),
   z.object({ type: z.literal('get-themes') }),
   z.object({ type: z.literal('get-sites') }),
@@ -78,6 +79,7 @@ export type ApplyPayload = z.infer<typeof ApplyPayloadSchema>;
 export const ContentCommandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('apply'), payload: ApplyPayloadSchema }),
   z.object({ type: z.literal('reset') }),
+  z.object({ type: z.literal('edit-start') }),
 ]);
 
 export type ContentCommand = z.infer<typeof ContentCommandSchema>;
@@ -109,6 +111,16 @@ export const SectionReportSchema = z.object({
 });
 
 export type SectionReport = z.infer<typeof SectionReportSchema>;
+
+/** Edit mode commits once, when the user presses Done (FR-21). */
+export const LayoutSaveSchema = z.object({
+  type: z.literal('layout-save'),
+  order: z.array(z.string().min(1).max(64)).max(100),
+  hidden: z.array(z.string().min(1).max(64)).max(100),
+  contentWidthPx: z.number().int().min(480).max(1200),
+});
+
+export type LayoutSave = z.infer<typeof LayoutSaveSchema>;
 
 /* ------------------------------------------------------------------ */
 /* responses                                                           */

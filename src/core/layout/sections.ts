@@ -61,23 +61,36 @@ export type LayoutInput = {
   /** CSS order only works when the container lays its children out in a flex/grid format. */
   containerSupportsOrder: boolean;
   containerSelector?: string;
+  /** Prefix every rule with this scope, e.g. `html[data-joevix="on"]`. */
+  scope?: string;
+  /** Per-site reading width (FR-25); ignored when the container is unsafe or absent. */
+  contentWidthPx?: number;
 };
+
+const WIDTH_MIN = 480;
+const WIDTH_MAX = 1200;
 
 /**
  * Layout is CSS only (ADR-6). Anything unsupported is skipped rather than
  * approximated with DOM moves.
  */
 export function buildLayoutCss(input: LayoutInput): string {
+  const scope = input.scope ? `${input.scope} ` : '';
   const blocks: string[] = [];
+  const container =
+    input.containerSelector && isSafeSelector(input.containerSelector)
+      ? input.containerSelector
+      : null;
 
-  if (
-    input.containerSupportsOrder &&
-    input.containerSelector &&
-    isSafeSelector(input.containerSelector)
-  ) {
-    blocks.push(
-      `${input.containerSelector} { display: flex !important; flex-direction: column !important; }`,
-    );
+  // Never restyle the container itself: `order` already works in any flex or
+  // grid parent, and turning a block into flex can break a site's layout.
+  if (container && input.contentWidthPx !== undefined) {
+    const width = Math.round(input.contentWidthPx);
+    if (Number.isFinite(width) && width >= WIDTH_MIN && width <= WIDTH_MAX) {
+      blocks.push(
+        `${container} { max-width: ${width}px !important; margin-left: auto !important; margin-right: auto !important; }`,
+      );
+    }
   }
 
   input.order.forEach((key, index) => {
@@ -94,5 +107,5 @@ export function buildLayoutCss(input: LayoutInput): string {
     blocks.push(`${selector} { display: none !important; }`);
   }
 
-  return blocks.join('\n');
+  return blocks.map((block) => `${scope}${block}`).join('\n');
 }

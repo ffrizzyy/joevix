@@ -61,8 +61,14 @@ adapter reports that honestly through `reorderable` instead of moving DOM nodes 
 
 CSS `order` only works when the container lays out its children with flex or grid **and** the
 section is a direct child. The layout engine checks this before offering drag and drop
-(ADR-6). If the container cannot support it, the section is skipped with a notice rather than
-moved in the DOM.
+(ADR-6). It never turns a block container into a flex container, so a site whose sections are
+plain block flow gets hide/show but not move. Sections that resolve to several elements
+(Genius lyrics) can be hidden as a set but are never moved. If the container cannot support
+it, the section is skipped with a notice rather than moved in the DOM.
+
+`contentWidthPx` is independent of reordering: a safe container selector gets
+`max-width` plus auto margins even when `order` is unavailable. The default 720 means
+"leave the page's own width alone"; other values write the rule.
 
 ## Testing an adapter
 
