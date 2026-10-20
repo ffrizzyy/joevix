@@ -20,7 +20,12 @@ export const en = {
   permissionDenied: 'Joevix cannot change this site without access. Nothing was changed.',
   missingTheme: 'That theme was removed. Light is used instead.',
   editUnavailable: 'Layout editing needs a site adapter. Themes work on every site.',
-  storageFull: 'Your browser storage is full. Export a backup, then delete a theme you no longer use.',
+  sectionsFound: 'sections found on this page',
+  sectionsMissing: 'Some sections were not found on this page. The rest still works.',
+  adapterReload: 'Reload the page to detect sections.',
+  editNeedsEnabled: 'Turn Joevix on for this site to edit its layout.',
+  storageFull:
+    'Your browser storage is full. Export a backup, then delete a theme you no longer use.',
   errorGeneric: 'Something went wrong. Nothing was changed.',
   optionsTitle: 'Joevix settings',
   tabThemes: 'Themes',
@@ -44,8 +49,7 @@ export const en = {
   privacyTitle: 'What Joevix stores',
   privacyBody:
     'Joevix stores your themes, per-site settings, and two preference flags in this browser only. It does not store page text, browsing history, or identifiers. It makes no network requests and has no analytics or accounts.',
-  privacyKeys:
-    'Storage keys: joevix:meta, joevix:settings, joevix:themes, joevix:sites.',
+  privacyKeys: 'Storage keys: joevix:meta, joevix:settings, joevix:themes, joevix:sites.',
   aboutBody:
     'Joevix changes how pages look on your screen. It never copies page content and never sends anything anywhere.',
   version: 'Version',

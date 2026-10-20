@@ -1,15 +1,18 @@
 import { browser, type Browser } from 'wxt/browser';
 import { defineBackground } from 'wxt/utils/define-background';
+import { adapterForUrl } from '../adapters';
 import { getBuiltinTheme, systemTheme } from '../core/theme/builtins';
 import { allThemes, findTheme } from '../core/theme/resolve';
 import {
   ContentHelloSchema,
+  SectionReportSchema,
   UiCommandSchema,
   fail,
   ok,
   type ApplyPayload,
   type Diagnostics,
   type Result,
+  type SectionReport,
   type SiteState,
   type UiCommand,
 } from '../core/messaging';
@@ -41,6 +44,12 @@ const CONTENT_SCRIPT_FILE = 'inject.js';
 /** Same file, in the form WXT's typed scripting API expects. */
 const CONTENT_SCRIPT_PATH = '/inject.js';
 const SCRIPT_ID_PREFIX = 'joevix-';
+
+/**
+ * Last section report per tab. Kept in memory: it is derived from the page and
+ * cheap to rebuild on the next load, so it does not belong in storage.
+ */
+const sectionReports = new Map<number, { siteId: string; report: SectionReport }>();
 
 function scriptId(siteId: string): string {
   return `${SCRIPT_ID_PREFIX}${siteId.replace(/[^a-z0-9]/g, '-')}`.slice(0, 64);
@@ -126,7 +135,7 @@ async function sendToTab(tabId: number | undefined, message: unknown): Promise<b
   }
 }
 
-function buildPayload(store: Store, config: SiteConfig): ApplyPayload | null {
+function buildPayload(store: Store, config: SiteConfig, url: string): ApplyPayload | null {
   if (!config.enabled || !store.settings.enabledEverywhere) return null;
 
   const withFont = (theme: Theme): Theme =>
@@ -134,11 +143,14 @@ function buildPayload(store: Store, config: SiteConfig): ApplyPayload | null {
       ? theme
       : { ...theme, font: { ...theme.font, sizePx: config.fontSizePx } };
 
+  const adapter = adapterForUrl(url);
+
   if (config.themeId === 'system') {
     return {
       config,
       theme: null,
       system: { light: withFont(systemTheme('light')), dark: withFont(systemTheme('dark')) },
+      adapter,
     };
   }
 
@@ -146,6 +158,7 @@ function buildPayload(store: Store, config: SiteConfig): ApplyPayload | null {
     config,
     theme: withFont(findTheme(config.themeId, store.themes) ?? getBuiltinTheme('builtin:light')!),
     system: null,
+    adapter,
   };
 }
 
@@ -163,7 +176,7 @@ async function syncTab(tabId: number | undefined, url: string): Promise<void> {
     return;
   }
 
-  const payload = buildPayload(store, config);
+  const payload = buildPayload(store, config, url);
   if (!payload) {
     await sendToTab(tabId, { type: 'reset' });
     return;
@@ -192,14 +205,20 @@ async function getOrCreateConfig(store: Store, siteId: string): Promise<SiteConf
   );
 }
 
-async function handleSiteState(command: Extract<UiCommand, { type: 'get-site-state' }>): Promise<Result<SiteState>> {
+async function handleSiteState(
+  command: Extract<UiCommand, { type: 'get-site-state' }>,
+): Promise<Result<SiteState>> {
   const parsed = parseSiteUrl(command.url);
   if (!parsed) return fail('This page cannot be themed.');
 
   const store = await readStore();
   const config = await getOrCreateConfig(store, parsed.siteId);
   const themes = allThemes(store.themes);
-  const missingTheme = config.themeId !== 'system' && !themes.some((theme) => theme.id === config.themeId);
+  const missingTheme =
+    config.themeId !== 'system' && !themes.some((theme) => theme.id === config.themeId);
+  const adapter = adapterForUrl(command.url);
+  const reported = command.tabId === undefined ? undefined : sectionReports.get(command.tabId);
+  const report = reported?.siteId === parsed.siteId ? reported.report : null;
 
   return ok({
     siteId: parsed.siteId,
@@ -210,7 +229,11 @@ async function handleSiteState(command: Extract<UiCommand, { type: 'get-site-sta
     themes,
     settings: store.settings,
     missingTheme,
-    adapterAvailable: false,
+    adapterAvailable: adapter !== null,
+    adapterId: adapter?.id ?? null,
+    sections: report
+      ? { found: report.found, missing: report.missing, reorderable: report.reorderable }
+      : null,
   });
 }
 
@@ -223,13 +246,22 @@ async function mutateSite(
   if (!parsed) return fail('This page cannot be themed.');
   const store = await readStore();
   const existing = await getOrCreateConfig(store, parsed.siteId);
-  const next = { ...mutate(existing), updatedAt: Date.now() };
+  const adapter = adapterForUrl(url);
+  const next = {
+    ...mutate(existing),
+    adapterId: adapter?.id ?? null,
+    adapterVersion: adapter?.schemaVersion ?? null,
+    updatedAt: Date.now(),
+  };
   await putSite(next);
   if (after) await after(next);
   return ok(next);
 }
 
-async function handleUi(command: UiCommand, _sender: Browser.runtime.MessageSender): Promise<Result<unknown>> {
+async function handleUi(
+  command: UiCommand,
+  _sender: Browser.runtime.MessageSender,
+): Promise<Result<unknown>> {
   switch (command.type) {
     case 'get-site-state':
       return handleSiteState(command);
@@ -338,7 +370,12 @@ async function handleUi(command: UiCommand, _sender: Browser.runtime.MessageSend
         if (!config || !config.enabled || !store.settings.enabledEverywhere) continue;
         if (!(await hasPermission(parsed.originPattern))) continue;
 
-        const payload: ApplyPayload = { config, theme: command.theme, system: null };
+        const payload: ApplyPayload = {
+          config,
+          theme: command.theme,
+          system: null,
+          adapter: adapterForUrl(tab.url),
+        };
         let delivered = await sendToTab(tab.id, { type: 'apply', payload });
         if (!delivered) {
           const injected = await inject(tab.id);
@@ -379,7 +416,10 @@ async function handleUi(command: UiCommand, _sender: Browser.runtime.MessageSend
       const store = await readStore();
       const themes: Theme[] =
         command.mode === 'merge'
-          ? [...store.themes.filter((t) => !parsed.value.themes.some((i) => i.id === t.id)), ...parsed.value.themes]
+          ? [
+              ...store.themes.filter((t) => !parsed.value.themes.some((i) => i.id === t.id)),
+              ...parsed.value.themes,
+            ]
           : parsed.value.themes;
       const sites =
         command.mode === 'merge' ? { ...store.sites, ...parsed.value.sites } : parsed.value.sites;
@@ -405,14 +445,12 @@ async function handleUi(command: UiCommand, _sender: Browser.runtime.MessageSend
     }
 
     case 'get-diagnostics': {
-      const store = await readStore();
       const tabs = await browser.tabs.query({ active: true, currentWindow: true });
       const parsed = parseSiteUrl(tabs[0]?.url);
-      const config = parsed ? store.sites[parsed.siteId] : undefined;
       return ok<Diagnostics>({
         version: browser.runtime.getManifest().version,
         siteId: parsed?.siteId ?? null,
-        adapterId: config?.adapterId ?? null,
+        adapterId: adapterForUrl(tabs[0]?.url)?.id ?? null,
         createdAt: Date.now(),
       });
     }
@@ -422,7 +460,9 @@ async function handleUi(command: UiCommand, _sender: Browser.runtime.MessageSend
   }
 }
 
-async function handleHello(sender: Browser.runtime.MessageSender): Promise<Result<ApplyPayload | null>> {
+async function handleHello(
+  sender: Browser.runtime.MessageSender,
+): Promise<Result<ApplyPayload | null>> {
   if (!sender.tab) return fail('Not a page.');
   const parsed = parseSiteUrl(sender.url);
   if (!parsed) return fail('This page cannot be themed.');
@@ -434,7 +474,7 @@ async function handleHello(sender: Browser.runtime.MessageSender): Promise<Resul
   const allowed = await hasPermission(parsed.originPattern);
   if (!allowed) return ok(null);
 
-  return ok(buildPayload(store, config));
+  return ok(buildPayload(store, config, sender.url ?? ''));
 }
 
 async function seedIfNeeded(): Promise<void> {
@@ -467,6 +507,21 @@ export default defineBackground(() => {
       return true;
     }
 
+    const report = SectionReportSchema.safeParse(message);
+    if (report.success) {
+      const tabId = sender.tab?.id;
+      const siteId = parseSiteUrl(sender.url)?.siteId;
+      if (tabId !== undefined) {
+        if (siteId && report.data.adapterId !== null) {
+          sectionReports.set(tabId, { siteId, report: report.data });
+        } else {
+          sectionReports.delete(tabId);
+        }
+      }
+      sendResponse(ok({ recorded: tabId !== undefined && siteId !== undefined }));
+      return false;
+    }
+
     const hello = ContentHelloSchema.safeParse(message);
     if (hello.success) {
       void handleHello(sender)
@@ -476,6 +531,10 @@ export default defineBackground(() => {
     }
 
     return false;
+  });
+
+  browser.tabs.onRemoved.addListener((tabId) => {
+    sectionReports.delete(tabId);
   });
 
   browser.permissions.onRemoved.addListener((removed) => {

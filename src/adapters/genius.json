@@ -1,0 +1,30 @@
+{
+  "id": "genius",
+  "schemaVersion": 1,
+  "match": ["https://genius.com/*-lyrics*", "https://*.genius.com/*-lyrics*"],
+  "container": "main",
+  "sections": [
+    {
+      "key": "info",
+      "label": "Song info",
+      "selector": "[data-testid=\"song-header\"]"
+    },
+    {
+      "key": "lyrics",
+      "label": "Lyrics",
+      "selector": "[data-lyrics-container=\"true\"]"
+    },
+    {
+      "key": "related",
+      "label": "Recommended",
+      "selector": "[class*=\"RecommendedSongs__Container\"]",
+      "defaultHidden": true
+    },
+    {
+      "key": "comments",
+      "label": "Comments",
+      "selector": "[class*=\"SongCommentsWithAds__Container\"]",
+      "defaultHidden": true
+    }
+  ]
+}

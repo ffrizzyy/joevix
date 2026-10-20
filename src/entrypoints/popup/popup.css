@@ -235,6 +235,16 @@ body {
   color: var(--jx-muted);
 }
 
+.hint-warn {
+  color: #9f2f2d;
+}
+
+@media (prefers-color-scheme: dark) {
+  .hint-warn {
+    color: #f3b5b6;
+  }
+}
+
 .footer {
   display: flex;
   align-items: center;

@@ -7,24 +7,24 @@ The full specification is in [`joevix-extension-spec.md`](./joevix-extension-spe
 
 ## Status
 
-| Milestone | Contents | State |
-|---|---|---|
-| M0 | Repository, WXT, strict TypeScript, lint ban list, tokens, schemas | Done |
-| M1 | Built-in themes, CSS engine, no-flash boot, popup, per-site enable, generic fallback | Done |
-| M2 | Per-origin permissions, runtime registration, revocation, reset, cross-tab sync | Done |
-| M3 | Color wheel, contrast matrix, custom themes | Done |
-| M4 | Site adapters | Planned |
-| M5 | Layout editing (reorder, hide, undo) | Planned |
-| M6 | Import/export, delete-all, privacy panel, global off | Done |
-| M7 | Accessibility, usability, E2E, hardening | Planned |
+| Milestone | Contents                                                                             | State   |
+| --------- | ------------------------------------------------------------------------------------ | ------- |
+| M0        | Repository, WXT, strict TypeScript, lint ban list, tokens, schemas                   | Done    |
+| M1        | Built-in themes, CSS engine, no-flash boot, popup, per-site enable, generic fallback | Done    |
+| M2        | Per-origin permissions, runtime registration, revocation, reset, cross-tab sync      | Done    |
+| M3        | Color wheel, contrast matrix, custom themes                                          | Done    |
+| M4        | Site adapters, build-time validation, section detection                              | Done    |
+| M5        | Layout editing (reorder, hide, undo)                                                 | Planned |
+| M6        | Import/export, delete-all, privacy panel, global off                                 | Done    |
+| M7        | Accessibility, usability, E2E, hardening                                             | Planned |
 
 Known gaps in the current build:
 
-- Adapters and layout editing (M4/M5). `buildLayoutCss` and the selector allowlist exist and are
-  tested, but no adapter ships yet, so **Edit layout** is disabled with an explanation.
+- Layout editing (M5). Adapters and section detection ship for Genius lyric pages, but the
+  **Edit layout** button stays disabled until the editor lands.
 - The first-run welcome card (spec 7.1) is not drawn yet; the popup opens straight to the
   per-site enable prompt.
-- Playwright end-to-end tests are not wired up yet (unit coverage is 91 tests).
+- Playwright end-to-end tests are not wired up yet (unit coverage is 112 tests).
 
 ## Requirements
 
@@ -86,7 +86,7 @@ See [`docs/privacy.md`](./docs/privacy.md).
 src/entrypoints/   background, inject (content), popup, options
 src/core/          pure TypeScript: model, color, contrast, css, site, layout, storage
 src/ui/            shared tokens and helpers
-src/adapters/      bundled per-site adapters (M4)
+src/adapters/      bundled per-site adapters (JSON + registry)
 tests/unit/        Vitest
 docs/              privacy policy, adapter guide
 ```

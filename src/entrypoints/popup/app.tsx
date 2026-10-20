@@ -204,11 +204,7 @@ export function App() {
                 <ThemeTile
                   key={theme.id}
                   name={theme.name}
-                  colors={[
-                    theme.colors.background,
-                    theme.colors.text,
-                    theme.colors.accent,
-                  ]}
+                  colors={[theme.colors.background, theme.colors.text, theme.colors.accent]}
                   selected={state.config.themeId === theme.id}
                   disabled={busy || !state.config.enabled}
                   onSelect={() => void chooseTheme(theme.id)}
@@ -269,8 +265,19 @@ export function App() {
               {t('resetSite')}
             </button>
             <p id="edit-hint" class="hint">
-              {t('editUnavailable')}
+              {!state.config.enabled
+                ? t('editNeedsEnabled')
+                : state.adapterAvailable
+                  ? state.sections
+                    ? `${state.sections.found} of ${
+                        state.sections.found + state.sections.missing
+                      } ${t('sectionsFound')}`
+                    : t('adapterReload')
+                  : t('editUnavailable')}
             </p>
+            {state.adapterAvailable && state.sections && state.sections.missing > 0 ? (
+              <p class="hint hint-warn">{t('sectionsMissing')}</p>
+            ) : null}
           </section>
 
           <footer class="footer">

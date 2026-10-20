@@ -1,5 +1,10 @@
 import preact from '@preact/preset-vite';
 import { defineConfig } from 'wxt';
+import { ADAPTERS } from './src/adapters';
+
+// Importing the registry runs every bundled adapter through AdapterSchema, so a
+// malformed selector or match pattern fails the build before it can ship.
+void ADAPTERS;
 
 const EXTENSION_CSP = [
   "default-src 'self'",

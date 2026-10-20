@@ -8,6 +8,7 @@
     "forceConsistentCasingInFileNames": true,
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
+    "resolveJsonModule": true,
     "verbatimModuleSyntax": true
   },
   "include": [

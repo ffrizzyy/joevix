@@ -1,23 +1,3 @@
-import { z } from 'zod';
-
-export const AdapterSectionSchema = z.object({
-  key: z.string().min(1).max(64).regex(/^[a-z0-9_-]+$/),
-  label: z.string().min(1).max(60),
-  selector: z.string().min(1).max(300),
-  defaultHidden: z.boolean().optional(),
-});
-
-export const AdapterSchema = z.object({
-  id: z.string().min(1).max(64).regex(/^[a-z0-9-]+$/),
-  schemaVersion: z.number().int().min(1).max(1000),
-  match: z.array(z.string().min(1).max(300)).min(1).max(20),
-  container: z.string().min(1).max(300),
-  sections: z.array(AdapterSectionSchema).max(100),
-});
-
-export type Adapter = z.infer<typeof AdapterSchema>;
-export type AdapterSection = z.infer<typeof AdapterSectionSchema>;
-
 const FORBIDDEN_SELECTOR_TOKENS = [
   ':has(',
   'attr(',
@@ -48,7 +28,10 @@ export function isSafeSelector(selector: string): boolean {
 }
 
 /** Removes unknown keys and duplicates, then appends missing adapter keys. */
-export function resolveOrder(availableKeys: readonly string[], savedOrder: readonly string[]): string[] {
+export function resolveOrder(
+  availableKeys: readonly string[],
+  savedOrder: readonly string[],
+): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
   for (const key of savedOrder) {
@@ -87,8 +70,14 @@ export type LayoutInput = {
 export function buildLayoutCss(input: LayoutInput): string {
   const blocks: string[] = [];
 
-  if (input.containerSupportsOrder && input.containerSelector && isSafeSelector(input.containerSelector)) {
-    blocks.push(`${input.containerSelector} { display: flex !important; flex-direction: column !important; }`);
+  if (
+    input.containerSupportsOrder &&
+    input.containerSelector &&
+    isSafeSelector(input.containerSelector)
+  ) {
+    blocks.push(
+      `${input.containerSelector} { display: flex !important; flex-direction: column !important; }`,
+    );
   }
 
   input.order.forEach((key, index) => {

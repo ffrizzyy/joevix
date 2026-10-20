@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { AdapterSchema } from './layout/adapter';
 import {
   SettingsSchema,
   SiteConfigSchema,
@@ -19,14 +20,24 @@ const AnyThemeIdSchema = z.union([z.literal('system'), ThemeIdSchema]);
 
 export const UiCommandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('get-site-state'), url: UrlSchema, tabId: TabIdSchema }),
-  z.object({ type: z.literal('set-theme'), url: UrlSchema, themeId: AnyThemeIdSchema, tabId: TabIdSchema }),
+  z.object({
+    type: z.literal('set-theme'),
+    url: UrlSchema,
+    themeId: AnyThemeIdSchema,
+    tabId: TabIdSchema,
+  }),
   z.object({
     type: z.literal('set-font-size'),
     url: UrlSchema,
     sizePx: z.number().int().min(12).max(40),
     tabId: TabIdSchema,
   }),
-  z.object({ type: z.literal('set-enabled'), url: UrlSchema, enabled: z.boolean(), tabId: TabIdSchema }),
+  z.object({
+    type: z.literal('set-enabled'),
+    url: UrlSchema,
+    enabled: z.boolean(),
+    tabId: TabIdSchema,
+  }),
   z.object({ type: z.literal('reset-site'), url: UrlSchema, tabId: TabIdSchema }),
   z.object({ type: z.literal('set-enabled-everywhere'), enabled: z.boolean() }),
   z.object({ type: z.literal('get-themes') }),
@@ -38,7 +49,11 @@ export const UiCommandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('end-preview') }),
   z.object({ type: z.literal('delete-site'), siteId: z.string().min(1).max(253) }),
   z.object({ type: z.literal('export-data') }),
-  z.object({ type: z.literal('import-data'), json: z.string().max(300_000), mode: z.enum(['replace', 'merge']) }),
+  z.object({
+    type: z.literal('import-data'),
+    json: z.string().max(300_000),
+    mode: z.enum(['replace', 'merge']),
+  }),
   z.object({ type: z.literal('delete-all') }),
   z.object({ type: z.literal('get-diagnostics') }),
 ]);
@@ -54,6 +69,8 @@ export const ApplyPayloadSchema = z.object({
   /** null means "follow the system scheme" and use `system`. */
   theme: ThemeSchema.nullable(),
   system: z.object({ light: ThemeSchema, dark: ThemeSchema }).nullable(),
+  /** Bundled adapter for this URL, or null on a generic site (FR-34). */
+  adapter: AdapterSchema.nullable().default(null),
 });
 
 export type ApplyPayload = z.infer<typeof ApplyPayloadSchema>;
@@ -75,6 +92,23 @@ export const ContentHelloSchema = z.object({
 });
 
 export type ContentHello = z.infer<typeof ContentHelloSchema>;
+
+export type SectionSummary = {
+  found: number;
+  missing: number;
+  reorderable: number;
+};
+
+/** Detection runs in the page because only the page has a DOM. */
+export const SectionReportSchema = z.object({
+  type: z.literal('section-report'),
+  adapterId: z.string().min(1).max(64).nullable(),
+  found: z.number().int().min(0).max(100),
+  missing: z.number().int().min(0).max(100),
+  reorderable: z.number().int().min(0).max(100),
+});
+
+export type SectionReport = z.infer<typeof SectionReportSchema>;
 
 /* ------------------------------------------------------------------ */
 /* responses                                                           */
@@ -103,6 +137,9 @@ export type SiteState = {
   /** The site pointed at a theme that no longer exists. */
   missingTheme: boolean;
   adapterAvailable: boolean;
+  adapterId: string | null;
+  /** Last detection report for this tab, when the content script has run. */
+  sections: SectionSummary | null;
 };
 
 export type Diagnostics = {
