@@ -25,7 +25,8 @@ In `chrome.storage.local`, on this device only:
 
 Nothing. The extension contains no `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, or
 beacon calls, and no remote code, fonts, or images. The generated CSS cannot contain `url()`,
-`@import`, or `attr()`.
+`@import`, or `attr()`. Extension pages enforce Trusted Types and a strict CSP with
+`connect-src 'none'`.
 
 ## Permissions
 
@@ -42,6 +43,9 @@ for that site. It can be revoked at any time from the browser's extension settin
 **Copy diagnostics** writes a short report to the clipboard: version, site, adapter id and
 version, section counts, and the labels of sections that did not match. It contains adapter
 labels and no page text. It is never sent anywhere.
+
+Joevix does not keep a persistent diagnostic event log in v1.0. Copy diagnostics is created only
+when you ask for it.
 
 ## Deleting your data
 

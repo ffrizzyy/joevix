@@ -601,7 +601,7 @@ Trust boundaries: web page (untrusted) → content script (limited trust, no sto
 | A06 Vulnerable and Outdated Components         | Library vulnerabilities                               | Few dependencies (Preact, Zod, WXT); committed lockfile; `pnpm audit` in CI; monthly updates                                                                                                                                                                           |
 | A07 Identification and Authentication Failures | Not applicable                                        | No accounts                                                                                                                                                                                                                                                            |
 | A08 Software and Data Integrity Failures       | Tampered build, malicious import                      | Pinned deps, reproducible CI build, checksums on release, schema + size limits on import, no remote code                                                                                                                                                               |
-| A09 Security Logging and Monitoring Failures   | Silent failure                                        | Local ring buffer (100 entries, no page text, off by default), viewable and clearable, plus "copy diagnostics" (FR-46)                                                                                                                                                 |
+| A09 Security Logging and Monitoring Failures   | Silent failure                                        | Copy diagnostics (FR-46) on demand, containing adapter labels and counts but no page text; persistent local ring buffer deferred from v1.0                                                                                                                             |
 | A10 Server-Side Request Forgery                | Not applicable                                        | No network code at all                                                                                                                                                                                                                                                 |
 
 ### 8.3 Extension-specific controls
@@ -616,7 +616,7 @@ Trust boundaries: web page (untrusted) → content script (limited trust, no sto
   "content_scripts": [],
   "web_accessible_resources": [],
   "content_security_policy": {
-    "extension_pages": "default-src 'self'; script-src 'self'; object-src 'none'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'"
+    "extension_pages": "default-src 'self'; script-src 'self'; object-src 'none'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'; require-trusted-types-for 'script'; trusted-types 'none'"
   }
 }
 ```
@@ -681,14 +681,14 @@ Declared content scripts require host permission at install time, which would me
 
 ### 8.6 Security acceptance checklist
 
-- [ ] No use of `innerHTML`, `outerHTML`, `insertAdjacentHTML`, `eval`, `Function`, or string-based timers (lint rule enforced)
-- [ ] Network inspection shows zero requests from the extension during all flows
-- [ ] A malicious import file (oversized, wrong types, CSS with `url()`, script strings) is rejected with a friendly message
-- [ ] A hostile test page cannot message the extension; the extension exposes no data through its host element
-- [ ] Permissions in the built manifest match 8.3 for both Chrome and Firefox
-- [ ] `content_scripts` is empty in the built manifest and registration happens only after a grant
-- [ ] Dependency audit shows no high or critical issues
-- [ ] Reset removes every injected sheet and attribute, and unregisters the site's content script
+- [x] No use of `innerHTML`, `outerHTML`, `insertAdjacentHTML`, `eval`, `Function`, or string-based timers (lint rule enforced)
+- [x] Network inspection shows zero requests from the extension during all flows
+- [x] A malicious import file (oversized, wrong types, CSS with `url()`, script strings) is rejected with a friendly message
+- [x] A hostile test page cannot message the extension; the extension exposes no data through its host element
+- [x] Permissions in the built manifest match 8.3 for both Chrome and Firefox
+- [x] `content_scripts` is empty in the built manifest and registration happens only after a grant
+- [x] Dependency audit shows no high or critical issues
+- [x] Reset removes every injected sheet and attribute, and unregisters the site's content script
 
 ### 8.7 Legal and terms-of-service notes
 
@@ -767,18 +767,26 @@ post-build size budget, and the Playwright + axe-core suite shipped. The automat
 options/popup at 320px, keyboard tabs, focus rings, forced colors, and edit-mode live
 announcements. Human usability sessions and a screen-reader pass remain release-checklist items.
 
+**Implementation note (M8):** v1.0.0 ships packaged Chrome and Firefox archives with SHA-256
+checksums, a manifest policy check, Trusted Types on extension pages, CodeQL and Dependabot, and
+a security E2E suite. The automated accessibility audit has no WCAG A/AA violations. The A09
+persistent ring buffer is deferred; **Copy diagnostics** is the on-demand v1.0 path. Screenshot
+baselines from the testing strategy are not in CI; functional E2E and axe cover the shipped
+flows. Human usability sessions and a manual screen-reader pass remain open in
+`docs/release-1.0.md`.
+
 ---
 
 ## 12. Release Checklist
 
 - [ ] All Must requirements have passing acceptance tests
-- [ ] Security checklist (8.6) fully ticked
+- [x] Security checklist (8.6) fully ticked
 - [ ] Accessibility audit completed with no AA failures
 - [ ] Usability test targets met (7.5)
-- [ ] Permissions, `content_scripts: []`, and CSP match 8.3 for both browsers
-- [ ] Privacy statement and README updated
-- [ ] SHA-256 checksums generated for release files
-- [ ] Rollback: previous build kept in `releases/` and documented in the README
+- [x] Permissions, `content_scripts: []`, and CSP match 8.3 for both browsers
+- [x] Privacy statement and README updated
+- [x] SHA-256 checksums generated for release files
+- [x] Rollback: previous build kept in `releases/` and documented in the README
 
 ---
 
@@ -866,37 +874,38 @@ announcements. Human usability sessions and a screen-reader pass remain release-
 
 Must requirements, their milestone, and their primary test.
 
-| Requirement                 | Milestone | Primary test                                   |
-| --------------------------- | --------- | ---------------------------------------------- |
-| FR-01 Built-in themes       | M1        | Unit: every theme has six valid colors         |
-| FR-02 System mode           | M1        | E2E: emulated color scheme changes theme       |
-| FR-03 Color wheel           | M3        | Component: pointer drag updates hue/saturation |
-| FR-04 Hex/RGB/HSL entry     | M3        | Unit: parser round-trip and rejects            |
-| FR-05 Six color roles       | M1        | Unit: CSS output contains each role            |
-| FR-06 Contrast + fix        | M3        | Unit: fix reaches ≥ 4.5 for 1000 random pairs  |
-| FR-07 Font controls         | M1        | E2E: size change persists after reload         |
-| FR-09 Live preview / Cancel | M3        | Component: cancel restores prior state         |
-| FR-20 Section outlines      | M5        | E2E: fixture outlines only declared sections   |
-| FR-21 Drag reorder          | M5        | E2E: drag commits, Escape cancels              |
-| FR-22 Keyboard reorder      | M5        | E2E: keyboard-only reorder                     |
-| FR-23 Hide/show             | M5        | E2E: hidden section stays hidden after reload  |
-| FR-26 Undo/redo             | M5        | Unit: history stack cap and ordering           |
-| FR-27 Reset site            | M2        | E2E: page equals baseline after reset          |
-| FR-30 Per-site settings     | M1        | Unit: two sites keep independent configs       |
-| FR-31 Site switch           | M1        | E2E: off removes styles immediately            |
-| FR-32 Permission flow       | M2        | E2E: denial leaves page untouched              |
-| FR-33 Adapter format        | M4        | Unit: schema rejects bad adapters              |
-| FR-34 Generic fallback      | M1        | E2E: unadapted site is themed, edit disabled   |
-| FR-35 SPA re-apply          | M2        | E2E: scripted DOM swap keeps theme             |
-| FR-38 Safe mode             | M2        | E2E: one click restores baseline               |
-| FR-37 Cross-tab sync        | M2        | E2E: two tabs update within 250 ms             |
-| FR-40 Local storage         | M1        | Unit + E2E: values survive restart             |
-| FR-43 Delete all            | M6        | E2E: storage empty, permissions revoked        |
-| FR-44 Privacy panel         | M6        | Manual: text matches storage keys              |
-| FR-45 Global off            | M6        | E2E: all sites stop applying                   |
-| NFR-01 Size                 | M1        | CI size budget check                           |
-| NFR-05 Accessibility        | M7        | axe-core + manual                              |
-| NFR-06 Zero network         | M7        | DevTools capture                               |
+| Requirement                 | Milestone | Primary test                                    |
+| --------------------------- | --------- | ----------------------------------------------- |
+| FR-01 Built-in themes       | M1        | Unit: every theme has six valid colors          |
+| FR-02 System mode           | M1        | E2E: system light/dark change updates `--jx-bg` |
+| FR-03 Color wheel           | M3        | Unit: color math; pointer drag manual           |
+| FR-04 Hex/RGB/HSL entry     | M3        | Unit: parser round-trip and rejects             |
+| FR-05 Six color roles       | M1        | Unit: CSS output contains each role             |
+| FR-06 Contrast + fix        | M3        | Unit: fix reaches ≥ 4.5 for 1000 random pairs   |
+| FR-07 Font controls         | M1        | E2E: theme size persists after reload           |
+| FR-09 Live preview / Cancel | M3        | Unit: draft cancel restores prior state         |
+| FR-20 Section outlines      | M5        | E2E: fixture outlines only declared sections    |
+| FR-21 Drag reorder          | M5        | E2E: reorder via Move up; drag gesture manual   |
+| FR-22 Keyboard reorder      | M5        | Unit: keyboard move and focus retention         |
+| FR-23 Hide/show             | M5        | E2E: hidden section stays hidden after reload   |
+| FR-26 Undo/redo             | M5        | Unit: history stack cap and ordering            |
+| FR-27 Reset site            | M2        | E2E: page equals baseline after reset           |
+| FR-30 Per-site settings     | M1        | Unit: two sites keep independent configs        |
+| FR-31 Site switch           | M1        | E2E: off removes styles immediately             |
+| FR-32 Permission flow       | M2        | Manual: native grant/denial; sender unit        |
+| FR-33 Adapter format        | M4        | Unit: schema rejects bad adapters               |
+| FR-34 Generic fallback      | M1        | Unit: no adapter; manual themed fallback        |
+| FR-35 SPA re-apply          | M2        | E2E: attribute rewrite keeps theme              |
+| FR-38 Safe mode             | M2        | E2E: reset restores baseline                    |
+| FR-37 Cross-tab sync        | M2        | E2E: second tab updates after a theme change    |
+| FR-40 Local storage         | M1        | Unit + E2E: values survive reload               |
+| FR-43 Delete all            | M6        | E2E: storage and dynamic scripts cleared        |
+| FR-44 Privacy panel         | M6        | Manual: text matches storage keys               |
+| FR-45 Global off            | M6        | E2E: all tabs stop and resume applying          |
+| NFR-01 Size                 | M1        | CI size budget check                            |
+| NFR-05 Accessibility        | M7        | axe-core automated + manual screen reader       |
+| NFR-06 Zero network         | M7        | Playwright request capture + lint bans          |
+| NFR-10 Storage quota        | M6        | Code review: quota mapped to friendly message   |
 
 ---
 

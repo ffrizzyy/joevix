@@ -1,4 +1,4 @@
-# Testing (M7)
+# Testing (M8)
 
 ## Commands
 
@@ -7,7 +7,9 @@ pnpm typecheck
 pnpm lint
 pnpm test          # Vitest: unit, schema, jsdom
 pnpm test:e2e      # builds .output/e2e-chrome, then Playwright + axe
+pnpm check:manifest # built manifest policy for Chrome and Firefox
 pnpm check:size    # after a production build
+pnpm audit --audit-level high
 ```
 
 `pnpm test:e2e` runs `wxt build` and `scripts/make-e2e-extension.mjs`. It uses Playwright's
@@ -34,10 +36,11 @@ without a local server or real network. Subresources are fulfilled with `204`.
 
 | Spec file               | What it proves                                                               |
 | ----------------------- | ---------------------------------------------------------------------------- |
-| `theme.spec.ts`         | Enable, default theme, theme switch, reload persistence, reset, no network   |
+| `theme.spec.ts`         | Enable, system scheme, cross-tab sync, global off, font size, reset          |
 | `edit.spec.ts`          | Reorder, hide, width, Done persistence, Escape restores the saved layout     |
 | `accessibility.spec.ts` | axe-core on options and popup, 320px width, arrow-key tabs, focusable import |
 | `shortcuts.spec.ts`     | All three commands registered; `edit-toggle` starts and cancels a session    |
+| `security.spec.ts`      | Hostile-page isolation, edit-host text, imports, reset, delete-all, SPA      |
 
 The browser-level shortcut keypresses themselves cannot be dispatched from Playwright; the
 suite checks registration plus the command handler's content-script path. Remap and press the
@@ -60,8 +63,27 @@ sees the lyric page. The audit must return zero WCAG A/AA violations.
 The build currently has roughly 14 KB of package headroom. Re-run the script after adding an
 adapter or a dependency; CI fails if either limit is crossed.
 
+## Security checks
+
+`pnpm lint` enforces the banned-sink and network lists in `eslint.config.js`. The E2E suite adds
+runtime evidence:
+
+- the page has no extension runtime messaging handle;
+- an edit-mode shadow root contains adapter labels, not page text;
+- oversized and CSS-injecting imports are rejected without persisting data;
+- no dynamic content script exists before the site is granted;
+- reset removes the adopted stylesheet and unregisters the script;
+- the theme returns after a site strips the `html` attribute;
+- the theme flow makes no request outside the page origin.
+
+`pnpm check:manifest` locks the built manifests to the spec: exact permission sets, empty
+`content_scripts` and `web_accessible_resources`, no wildcard `<all_urls>`, the strict CSP plus
+Trusted Types, and the correct Firefox background/optional-permission keys. CI runs
+`pnpm audit --audit-level high`; CodeQL and Dependabot run alongside CI.
+
 ## Still manual
 
+- Five-person usability test from spec 7.5.
 - Screen-reader pass with NVDA or VoiceOver (edit bar, live announcements, focus restoration).
 - Windows High Contrast / forced-colors visual check.
 - Firefox install and permission flow; the Playwright suite is Chromium-only.

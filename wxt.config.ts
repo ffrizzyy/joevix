@@ -16,6 +16,8 @@ const EXTENSION_CSP = [
   "connect-src 'none'",
   "base-uri 'none'",
   "form-action 'none'",
+  "require-trusted-types-for 'script'",
+  "trusted-types 'none'",
 ].join('; ');
 
 export default defineConfig({

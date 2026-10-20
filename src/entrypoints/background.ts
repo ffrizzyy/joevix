@@ -142,8 +142,7 @@ async function sendToTab(tabId: number | undefined, message: unknown): Promise<b
 async function startEditInTab(tabId: number): Promise<boolean> {
   try {
     const response = (await browser.tabs.sendMessage(tabId, { type: 'edit-start' })) as
-      | { ok?: boolean }
-      | undefined;
+      { ok?: boolean } | undefined;
     return response?.ok === true;
   } catch {
     return false;
@@ -524,7 +523,12 @@ async function handleUi(
       const permissions = await browser.permissions.getAll();
       const origins = (permissions.origins ?? []).filter((origin) => origin.startsWith('http'));
       if (origins.length > 0) {
-        await browser.permissions.remove({ origins });
+        try {
+          await browser.permissions.remove({ origins });
+        } catch {
+          // Data deletion must not be blocked by a permission the browser treats
+          // as required (for example, a host granted by an enterprise policy).
+        }
       }
       await unregisterAll();
       await clearAll();

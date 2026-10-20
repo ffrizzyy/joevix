@@ -1,6 +1,6 @@
 {
   "name": "joevix",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Restyle and rearrange pages on your own screen. Local only.",
@@ -17,6 +17,8 @@
     "test:e2e": "pnpm build:e2e && playwright test",
     "build:e2e": "wxt build && node scripts/make-e2e-extension.mjs",
     "check:size": "node scripts/check-size.mjs .output/chrome-mv3 .output/firefox-mv3",
+    "check:manifest": "node scripts/check-manifest.mjs",
+    "package:release": "node scripts/package-release.mjs",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -36,7 +38,7 @@
     "prettier": "^3.6.2",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.0",
-    "vitest": "^3.2.7",
+    "vitest": "^4.1.12",
     "wxt": "^0.21.4"
   }
 }
