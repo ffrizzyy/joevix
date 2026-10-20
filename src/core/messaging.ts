@@ -57,6 +57,10 @@ export const UiCommandSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('delete-all') }),
   z.object({ type: z.literal('get-diagnostics') }),
+  z.object({
+    type: z.literal('complete-welcome'),
+    themeId: AnyThemeIdSchema.nullable(),
+  }),
 ]);
 
 export type UiCommand = z.infer<typeof UiCommandSchema>;
@@ -80,6 +84,7 @@ export const ContentCommandSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('apply'), payload: ApplyPayloadSchema }),
   z.object({ type: z.literal('reset') }),
   z.object({ type: z.literal('edit-start') }),
+  z.object({ type: z.literal('edit-toggle') }),
 ]);
 
 export type ContentCommand = z.infer<typeof ContentCommandSchema>;
@@ -108,6 +113,8 @@ export const SectionReportSchema = z.object({
   found: z.number().int().min(0).max(100),
   missing: z.number().int().min(0).max(100),
   reorderable: z.number().int().min(0).max(100),
+  /** Adapter keys only, never page text. Powers FR-46 diagnostics. */
+  missingKeys: z.array(z.string().min(1).max(64)).max(100).default([]),
 });
 
 export type SectionReport = z.infer<typeof SectionReportSchema>;
@@ -158,6 +165,10 @@ export type Diagnostics = {
   version: string;
   siteId: string | null;
   adapterId: string | null;
+  adapterVersion: number | null;
+  hasReport: boolean;
+  sectionsFound: number;
+  sectionsMissing: string[];
   createdAt: number;
 };
 

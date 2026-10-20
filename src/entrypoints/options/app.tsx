@@ -1,12 +1,22 @@
 import { useEffect, useState } from 'preact/hooks';
+import type { JSX } from 'preact';
 import { browser } from 'wxt/browser';
-import { t } from '../../core/i18n';
+import { t, type MessageKey } from '../../core/i18n';
 import type { Settings, SiteConfig, Theme } from '../../core/model';
 import { downloadJson, send } from '../../ui/api';
+import { themeLabel } from '../../ui/theme-name';
 import { ThemeEditor, draftFromTheme, draftToTheme, type Draft } from './theme-editor';
 
 type TabKey = 'themes' | 'sites' | 'data' | 'about';
 type Notice = { kind: 'info' | 'success' | 'error'; text: string };
+
+const MODE_LABELS: Record<Theme['mode'], MessageKey> = {
+  light: 'modeLight',
+  dark: 'modeDark',
+  sepia: 'modeSepia',
+  contrast: 'modeContrast',
+  custom: 'modeCustom',
+};
 
 const TABS: Array<{ key: TabKey; label: () => string }> = [
   { key: 'themes', label: () => t('tabThemes') },
@@ -112,7 +122,10 @@ export function App() {
     setSavingDraft(true);
     setDraftError(null);
     const id = draft.id ?? `custom:${crypto.randomUUID()}`;
-    const response = await send({ type: 'save-theme', theme: draftToTheme({ ...draft, name }, id) });
+    const response = await send({
+      type: 'save-theme',
+      theme: draftToTheme({ ...draft, name }, id),
+    });
     setSavingDraft(false);
 
     if (!response.ok) {
@@ -227,6 +240,22 @@ export function App() {
     await load();
   }
 
+  function onTabKeyDown(event: JSX.TargetedKeyboardEvent<HTMLButtonElement>): void {
+    const index = TABS.findIndex((item) => item.key === tab);
+    let next = -1;
+    if (event.key === 'ArrowRight') next = (index + 1) % TABS.length;
+    else if (event.key === 'ArrowLeft') next = (index - 1 + TABS.length) % TABS.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = TABS.length - 1;
+    else return;
+
+    event.preventDefault();
+    const nextTab = TABS[next];
+    if (!nextTab) return;
+    setTab(nextTab.key);
+    document.getElementById(`tab-${nextTab.key}`)?.focus();
+  }
+
   return (
     <main class="page">
       <header class="masthead">
@@ -245,8 +274,10 @@ export function App() {
             id={`tab-${item.key}`}
             aria-selected={tab === item.key}
             aria-controls={`panel-${item.key}`}
+            tabIndex={tab === item.key ? 0 : -1}
             class="tab"
             onClick={() => setTab(item.key)}
+            onKeyDown={onTabKeyDown}
           >
             {item.label()}
           </button>
@@ -285,16 +316,12 @@ export function App() {
                 {builtins.map((theme) => (
                   <article class="card theme-card" key={theme.id}>
                     <ThemeSwatch theme={theme} />
-                    <h3 class="card-title">{theme.name}</h3>
+                    <h3 class="card-title">{themeLabel(theme)}</h3>
                     <p class="meta">
-                      {theme.mode} · {t('readOnlyTheme')}
+                      {t(MODE_LABELS[theme.mode])} · {t('readOnlyTheme')}
                     </p>
                     <div class="card-actions">
-                      <button
-                        type="button"
-                        class="btn btn-quiet"
-                        onClick={() => startNew(theme)}
-                      >
+                      <button type="button" class="btn btn-quiet" onClick={() => startNew(theme)}>
                         {t('duplicate')}
                       </button>
                     </div>
@@ -320,11 +347,7 @@ export function App() {
                         >
                           {t('edit')}
                         </button>
-                        <button
-                          type="button"
-                          class="btn btn-quiet"
-                          onClick={() => startNew(theme)}
-                        >
+                        <button type="button" class="btn btn-quiet" onClick={() => startNew(theme)}>
                           {t('duplicate')}
                         </button>
                         <button

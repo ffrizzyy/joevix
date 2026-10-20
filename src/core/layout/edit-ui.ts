@@ -1,4 +1,4 @@
-import { t } from '../i18n';
+import { currentLocale, t } from '../i18n';
 import type { DetectedSection } from './detect';
 import {
   canRedo,
@@ -95,6 +95,12 @@ button {
 }
 button:disabled { opacity: 0.45; cursor: default; }
 button[aria-pressed='true'] { border-color: var(--jv-accent); }
+button:focus-visible,
+input:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--jv-accent);
+  outline-offset: 2px;
+}
 .status { color: var(--jv-muted); font-size: 12px; }
 .status-error { color: #b3261e; }
 .panel {
@@ -159,6 +165,17 @@ button.icon {
 }
 @media (prefers-reduced-motion: no-preference) {
   .panel { transition: opacity 120ms ease, transform 120ms ease; }
+}
+@media (forced-colors: active) {
+  .bar,
+  .panel,
+  .row,
+  button {
+    border-color: CanvasText;
+  }
+  .chip {
+    forced-color-adjust: none;
+  }
 }
 `;
 
@@ -269,6 +286,7 @@ export function startEditSession(options: EditSessionOptions): EditSessionHandle
 
   const host = create(doc, 'div');
   host.setAttribute(EDIT_HOST_ATTR, 'on');
+  host.setAttribute('lang', currentLocale());
   const shadow = host.attachShadow({ mode: 'open' });
 
   const style = create(doc, 'style');
@@ -304,6 +322,11 @@ export function startEditSession(options: EditSessionOptions): EditSessionHandle
 
   const spacer = create(doc, 'span', 'spacer');
   bar.append(title, status, spacer, undoButton, redoButton, resetButton, sectionsButton, done);
+
+  function announce(text: string): void {
+    status.textContent = text;
+    status.classList.remove('status-error');
+  }
 
   const panel = create(doc, 'div', 'panel');
   panel.hidden = true;
@@ -416,12 +439,22 @@ export function startEditSession(options: EditSessionOptions): EditSessionHandle
       const up = iconButton(doc, 'up', `${t('editMoveUp')}: ${section.label}`, 'up');
       up.disabled = !movable || index <= 0;
       if (!movable) up.title = t('editCannotMove');
-      up.addEventListener('click', () => apply(moveAmong(history.present, key, options.movable, -1)));
+      up.addEventListener('click', () => {
+        const next = moveAmong(history.present, key, options.movable, -1);
+        apply(next);
+        const position = next.order.indexOf(key) + 1;
+        if (position > 0) announce(`${t('editMoved')} ${position}`);
+      });
 
       const down = iconButton(doc, 'down', `${t('editMoveDown')}: ${section.label}`, 'down');
       down.disabled = !movable || index === options.movable.length - 1;
       if (!movable) down.title = t('editCannotMove');
-      down.addEventListener('click', () => apply(moveAmong(history.present, key, options.movable, 1)));
+      down.addEventListener('click', () => {
+        const next = moveAmong(history.present, key, options.movable, 1);
+        apply(next);
+        const position = next.order.indexOf(key) + 1;
+        if (position > 0) announce(`${t('editMoved')} ${position}`);
+      });
 
       const toggle = iconButton(
         doc,
@@ -429,7 +462,11 @@ export function startEditSession(options: EditSessionOptions): EditSessionHandle
         `${hidden ? t('editShow') : t('editHide')}: ${section.label}`,
         hidden ? 'show' : 'hide',
       );
-      toggle.addEventListener('click', () => apply(toggleHidden(history.present, key)));
+      toggle.addEventListener('click', () => {
+        const next = toggleHidden(history.present, key);
+        apply(next);
+        announce(next.hidden.includes(key) ? t('editHidden') : t('editShown'));
+      });
 
       if (movable) {
         row.draggable = true;
@@ -447,7 +484,12 @@ export function startEditSession(options: EditSessionOptions): EditSessionHandle
         row.addEventListener('drop', (event) => {
           event.preventDefault();
           row.removeAttribute('data-drop');
-          if (dragKey) apply(moveAmongTo(history.present, dragKey, key, options.movable));
+          if (dragKey) {
+            const next = moveAmongTo(history.present, dragKey, key, options.movable);
+            apply(next);
+            const position = next.order.indexOf(dragKey) + 1;
+            if (position > 0) announce(`${t('editMoved')} ${position}`);
+          }
           dragKey = null;
         });
         row.addEventListener('dragend', () => {

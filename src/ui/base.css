@@ -79,3 +79,24 @@ h3 {
     animation: none !important;
   }
 }
+
+@media (prefers-contrast: more) {
+  :root {
+    --jx-muted: light-dark(#4a4844, #c9c7c2);
+    --jx-border: light-dark(#8a8884, #5a5955);
+    --jx-border-strong: light-dark(#3b3a38, #b8b6b1);
+  }
+}
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 2px solid Highlight;
+  }
+
+  .theme[aria-pressed='true'],
+  .switch[aria-checked='true'],
+  .tab[aria-selected='true'] {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+}

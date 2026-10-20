@@ -2,7 +2,8 @@
 
 Edit mode is the only place where a page can be rearranged. It is entered from the popup's
 **Edit layout** button, which is enabled when the site is on and a bundled adapter matches the
-page.
+page, or with `Alt+Shift+E` (FR-47). The shortcut toggles: pressing it again cancels the session.
+The popup's **Edit layout** button starts it; **Escape** cancels.
 
 ## In the page
 
@@ -13,6 +14,9 @@ page.
   row onto another row in the same movable group reorders it. Only sections CSS can actually
   move are draggable; the rest can be hidden, and say so in a notice.
 - **Hide / Show** writes the section to the saved `hidden` list. Hiding is always available.
+- Moving, hiding, and showing a section updates a polite live region ("Section moved to
+  position 2", "Section hidden"), so the result is announced without moving focus. Buttons have
+  visible focus rings, and the bar and panel follow forced-colors mode.
 - **Reset** returns the draft to adapter defaults, not to the last save.
 - **Done** saves once, closes edit mode, and keeps the result. **Escape** leaves without
   saving and restores the last saved layout. Undo history is 20 steps and is cleared when the
@@ -22,10 +26,10 @@ page.
 
 Only three fields on the site record (spec 5.1):
 
-| Field            | Meaning                                                      |
-| ---------------- | ------------------------------------------------------------ |
-| `order`          | Adapter section keys; unknown keys are dropped on save       |
-| `hidden`         | Subset of `order`                                            |
+| Field            | Meaning                                                        |
+| ---------------- | -------------------------------------------------------------- |
+| `order`          | Adapter section keys; unknown keys are dropped on save         |
+| `hidden`         | Subset of `order`                                              |
 | `contentWidthPx` | Reading width, 480–1200; 720 leaves the page's own width alone |
 
 The content script sends one typed `layout-save` message. The service worker re-resolves the
@@ -50,16 +54,25 @@ break the page.
 
 ## Code map
 
-| File                              | Role                                                 |
-| --------------------------------- | ---------------------------------------------------- |
-| `src/core/layout/editor.ts`       | Pure draft, history, move, hide, width transitions   |
-| `src/core/layout/edit-ui.ts`      | Shadow-root bar, section list, drag, width slider    |
-| `src/core/layout/sections.ts`     | `buildLayoutCss()` and selector safety               |
-| `src/entrypoints/inject.ts`       | Session lifecycle, section marking, save message     |
-| `src/entrypoints/background.ts`   | `start-edit` and sanitized `layout-save`             |
+| File                            | Role                                               |
+| ------------------------------- | -------------------------------------------------- |
+| `src/core/layout/editor.ts`     | Pure draft, history, move, hide, width transitions |
+| `src/core/layout/edit-ui.ts`    | Shadow-root bar, section list, drag, width slider  |
+| `src/core/layout/sections.ts`   | `buildLayoutCss()` and selector safety             |
+| `src/entrypoints/inject.ts`     | Session lifecycle, section marking, save message   |
+| `src/entrypoints/background.ts` | `start-edit` and sanitized `layout-save`           |
 
 Unit tests cover the transitions, history cap, CSS scoping, width bounds, and the DOM
-interactions (`tests/unit/editor.test.ts`, `edit-ui.test.ts`, `sections.test.ts`).
+interactions (`tests/unit/editor.test.ts`, `edit-ui.test.ts`, `sections.test.ts`). The Playwright
+suite drives a synthetic Genius lyric fixture through reorder, hide, width, Done, Escape, and
+reload (`tests/e2e/edit.spec.ts`); see [`testing.md`](./testing.md).
+
+## Diagnostics
+
+If edit mode is unavailable, open the popup and use **Copy diagnostics**. It reports the adapter
+id and version, how many sections were found, and the adapter labels that did not match, without
+including page text. `get-diagnostics` reads the last in-memory section report for the tab; the
+report is rebuilt on every page load.
 
 ## Deferred
 

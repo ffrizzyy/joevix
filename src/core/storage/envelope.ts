@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { t } from '../i18n';
 import {
   LIMITS,
   SCHEMA_VERSION,
@@ -46,23 +47,23 @@ export type ParseResult =
 export function parseEnvelope(text: string): ParseResult {
   const bytes = new TextEncoder().encode(text).byteLength;
   if (bytes > LIMITS.importBytes) {
-    return { ok: false, error: `This file is larger than ${Math.round(LIMITS.importBytes / 1024)} KB.` };
+    return { ok: false, error: t('importTooLarge') };
   }
 
   let json: unknown;
   try {
     json = JSON.parse(text);
   } catch {
-    return { ok: false, error: 'This file is not valid JSON.' };
+    return { ok: false, error: t('importInvalidJson') };
   }
 
   const parsed = EnvelopeSchema.safeParse(json);
   if (!parsed.success) {
-    return { ok: false, error: 'This file is not a valid Joevix backup. Nothing was changed.' };
+    return { ok: false, error: t('importInvalidBackup') };
   }
 
   if (Object.keys(parsed.data.sites).length > LIMITS.sites) {
-    return { ok: false, error: `A backup can hold at most ${LIMITS.sites} sites.` };
+    return { ok: false, error: t('importTooManySites') };
   }
 
   return { ok: true, value: parsed.data };

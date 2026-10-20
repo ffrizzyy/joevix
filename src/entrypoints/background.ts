@@ -1,8 +1,9 @@
 import { browser, type Browser } from 'wxt/browser';
 import { defineBackground } from 'wxt/utils/define-background';
 import { adapterForUrl } from '../adapters';
+import { t } from '../core/i18n';
 import { getBuiltinTheme, systemTheme } from '../core/theme/builtins';
-import { allThemes, findTheme } from '../core/theme/resolve';
+import { allThemes, findTheme, nextThemeId } from '../core/theme/resolve';
 import {
   ContentHelloSchema,
   LayoutSaveSchema,
@@ -29,6 +30,7 @@ import {
   type Theme,
 } from '../core/model';
 import { parseSiteUrl } from '../core/site';
+import { isExtensionPageSender } from '../core/sender';
 import { makeEnvelope, parseEnvelope } from '../core/storage/envelope';
 import {
   StorageFullError,
@@ -61,13 +63,11 @@ function scriptId(siteId: string): string {
 function toMessage(error: unknown): string {
   if (error instanceof StorageFullError) return error.message;
   if (error instanceof Error) return error.message;
-  return 'Something went wrong.';
+  return t('errorGeneric');
 }
 
 function isExtensionPage(sender: Browser.runtime.MessageSender): boolean {
-  if (sender.tab) return false;
-  const url = sender.url ?? '';
-  return sender.id === browser.runtime.id && url.startsWith(browser.runtime.getURL(''));
+  return isExtensionPageSender(sender, browser.runtime.id, browser.runtime.getURL(''));
 }
 
 async function hasPermission(originPattern: string): Promise<boolean> {
@@ -150,6 +150,54 @@ async function startEditInTab(tabId: number): Promise<boolean> {
   }
 }
 
+async function activePage(): Promise<{ id: number; url: string } | null> {
+  const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+  if (tab?.id === undefined || !tab.url) return null;
+  return { id: tab.id, url: tab.url };
+}
+
+/** FR-47: Alt+Shift+E starts edit mode, or cancels an open session. */
+async function toggleEditOnActiveTab(): Promise<void> {
+  const tab = await activePage();
+  if (!tab) return;
+  const parsed = parseSiteUrl(tab.url);
+  if (!parsed || !adapterForUrl(tab.url)) return;
+
+  const store = await readStore();
+  const config = store.sites[parsed.siteId];
+  if (!config?.enabled || !store.settings.enabledEverywhere) return;
+  if (!(await hasPermission(parsed.originPattern))) return;
+
+  if (await sendToTab(tab.id, { type: 'edit-toggle' })) return;
+  if (!(await inject(tab.id))) return;
+  await sendToTab(tab.id, { type: 'edit-toggle' });
+}
+
+/** FR-47: Alt+Shift+T walks the built-ins and the saved custom themes. */
+async function cycleThemeOnActiveTab(): Promise<void> {
+  const tab = await activePage();
+  if (!tab) return;
+  const parsed = parseSiteUrl(tab.url);
+  if (!parsed) return;
+
+  const store = await readStore();
+  const config = store.sites[parsed.siteId];
+  if (!config?.enabled || !store.settings.enabledEverywhere) return;
+  if (!(await hasPermission(parsed.originPattern))) return;
+
+  const next = nextThemeId(
+    config.themeId,
+    allThemes(store.themes).map((theme) => theme.id),
+  );
+  await putSite({ ...config, themeId: next, updatedAt: Date.now() });
+  await syncTab(tab.id, tab.url);
+}
+
+async function handleCommand(command: string): Promise<void> {
+  if (command === 'toggle-edit') await toggleEditOnActiveTab();
+  else if (command === 'cycle-theme') await cycleThemeOnActiveTab();
+}
+
 function buildPayload(store: Store, config: SiteConfig, url: string): ApplyPayload | null {
   if (!config.enabled || !store.settings.enabledEverywhere) return null;
 
@@ -224,7 +272,7 @@ async function handleSiteState(
   command: Extract<UiCommand, { type: 'get-site-state' }>,
 ): Promise<Result<SiteState>> {
   const parsed = parseSiteUrl(command.url);
-  if (!parsed) return fail('This page cannot be themed.');
+  if (!parsed) return fail(t('pageCannotBeThemed'));
 
   const store = await readStore();
   const config = await getOrCreateConfig(store, parsed.siteId);
@@ -258,7 +306,7 @@ async function mutateSite(
   after?: (config: SiteConfig) => Promise<void>,
 ): Promise<Result<SiteConfig>> {
   const parsed = parseSiteUrl(url);
-  if (!parsed) return fail('This page cannot be themed.');
+  if (!parsed) return fail(t('pageCannotBeThemed'));
   const store = await readStore();
   const existing = await getOrCreateConfig(store, parsed.siteId);
   const adapter = adapterForUrl(url);
@@ -284,7 +332,7 @@ async function handleUi(
     case 'set-theme': {
       if (command.themeId !== 'system') {
         const store = await readStore();
-        if (!findTheme(command.themeId, store.themes)) return fail('That theme no longer exists.');
+        if (!findTheme(command.themeId, store.themes)) return fail(t('themeNoLongerExists'));
       }
       return mutateSite(
         command.url,
@@ -302,9 +350,9 @@ async function handleUi(
 
     case 'set-enabled': {
       const parsed = parseSiteUrl(command.url);
-      if (!parsed) return fail('This page cannot be themed.');
+      if (!parsed) return fail(t('pageCannotBeThemed'));
       if (command.enabled && !(await hasPermission(parsed.originPattern))) {
-        return fail('Joevix needs access to this site to change how it looks.');
+        return fail(t('needsAccess'));
       }
 
       const store = await readStore();
@@ -324,7 +372,7 @@ async function handleUi(
 
     case 'reset-site': {
       const parsed = parseSiteUrl(command.url);
-      if (!parsed) return fail('This page cannot be themed.');
+      if (!parsed) return fail(t('pageCannotBeThemed'));
       await deleteSite(parsed.siteId);
       await unregister(parsed.siteId);
       await sendToTab(command.tabId, { type: 'reset' });
@@ -333,26 +381,26 @@ async function handleUi(
 
     case 'start-edit': {
       const parsed = parseSiteUrl(command.url);
-      if (!parsed) return fail('This page cannot be edited.');
-      if (command.tabId === undefined) return fail('Open a page first.');
+      if (!parsed) return fail(t('pageCannotBeEdited'));
+      if (command.tabId === undefined) return fail(t('openPageFirst'));
 
       const store = await readStore();
       const config = store.sites[parsed.siteId];
       if (!config || !config.enabled || !store.settings.enabledEverywhere) {
-        return fail('Turn Joevix on for this site first.');
+        return fail(t('enableFirst'));
       }
-      if (!adapterForUrl(command.url)) return fail('This page has no layout adapter.');
+      if (!adapterForUrl(command.url)) return fail(t('noAdapter'));
       if (!(await hasPermission(parsed.originPattern))) {
-        return fail('Joevix needs access to this site.');
+        return fail(t('needsAccess'));
       }
 
       let started = await startEditInTab(command.tabId);
       if (!started) {
         const injected = await inject(command.tabId);
-        if (!injected) return fail('This page cannot be edited right now.');
+        if (!injected) return fail(t('cannotEditNow'));
         started = await startEditInTab(command.tabId);
       }
-      if (!started) return fail('This page cannot be edited right now.');
+      if (!started) return fail(t('cannotEditNow'));
       return ok({ started: true });
     }
 
@@ -486,17 +534,62 @@ async function handleUi(
 
     case 'get-diagnostics': {
       const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-      const parsed = parseSiteUrl(tabs[0]?.url);
+      const tab = tabs[0];
+      const parsed = parseSiteUrl(tab?.url);
+      const adapter = adapterForUrl(tab?.url);
+      const reported = tab?.id === undefined ? undefined : sectionReports.get(tab.id);
+      const report = reported && reported.siteId === parsed?.siteId ? reported.report : undefined;
+      const missingLabels =
+        adapter && report
+          ? adapter.sections
+              .filter((section) => report.missingKeys.includes(section.key))
+              .map((section) => section.label)
+          : [];
+
       return ok<Diagnostics>({
         version: browser.runtime.getManifest().version,
         siteId: parsed?.siteId ?? null,
-        adapterId: adapterForUrl(tabs[0]?.url)?.id ?? null,
+        adapterId: adapter?.id ?? null,
+        adapterVersion: adapter?.schemaVersion ?? null,
+        hasReport: report !== undefined,
+        sectionsFound: report?.found ?? 0,
+        sectionsMissing: missingLabels,
         createdAt: Date.now(),
       });
     }
 
+    case 'complete-welcome': {
+      const store = await readStore();
+      if (
+        command.themeId !== null &&
+        command.themeId !== 'system' &&
+        !findTheme(command.themeId, store.themes)
+      ) {
+        return fail(t('themeNoLongerExists'));
+      }
+
+      const settings = {
+        ...store.settings,
+        onboarded: true,
+        ...(command.themeId === null ? {} : { defaultThemeId: command.themeId }),
+      };
+      await writeSettings(settings);
+
+      if (command.themeId !== null) {
+        const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+        const parsed = parseSiteUrl(tab?.url);
+        const config = parsed ? store.sites[parsed.siteId] : undefined;
+        if (tab?.id !== undefined && tab.url && parsed && config?.enabled) {
+          await putSite({ ...config, themeId: command.themeId, updatedAt: Date.now() });
+          await syncTab(tab.id, tab.url);
+        }
+      }
+
+      return ok(settings);
+    }
+
     default:
-      return fail('Unknown command.');
+      return fail(t('unknownCommand'));
   }
 }
 
@@ -505,15 +598,15 @@ async function handleLayoutSave(
   data: LayoutSave,
 ): Promise<Result<{ saved: true }>> {
   const parsed = parseSiteUrl(sender.url);
-  if (!parsed) return fail('This page cannot be saved.');
+  if (!parsed) return fail(t('cannotSavePage'));
 
   const adapter = adapterForUrl(sender.url);
-  if (!adapter) return fail('This page has no layout adapter.');
+  if (!adapter) return fail(t('noAdapter'));
 
   const store = await readStore();
   const existing = store.sites[parsed.siteId];
   if (!existing || !existing.enabled || !store.settings.enabledEverywhere) {
-    return fail('Turn Joevix on for this site first.');
+    return fail(t('enableFirst'));
   }
 
   const keys = adapter.sections.map((section) => section.key);
@@ -543,9 +636,9 @@ async function handleLayoutSave(
 async function handleHello(
   sender: Browser.runtime.MessageSender,
 ): Promise<Result<ApplyPayload | null>> {
-  if (!sender.tab) return fail('Not a page.');
+  if (!sender.tab) return fail(t('notAPage'));
   const parsed = parseSiteUrl(sender.url);
-  if (!parsed) return fail('This page cannot be themed.');
+  if (!parsed) return fail(t('pageCannotBeThemed'));
 
   const store = await readStore();
   const config = store.sites[parsed.siteId];
@@ -574,11 +667,15 @@ export default defineBackground(() => {
     void seedIfNeeded();
   });
 
+  browser.commands.onCommand.addListener((command) => {
+    void handleCommand(command).catch(() => undefined);
+  });
+
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (isExtensionPage(sender)) {
       const parsed = UiCommandSchema.safeParse(message);
       if (!parsed.success) {
-        sendResponse(fail('Malformed command.'));
+        sendResponse(fail(t('malformedCommand')));
         return false;
       }
       void handleUi(parsed.data, sender)
@@ -606,7 +703,7 @@ export default defineBackground(() => {
     if (hello.success) {
       void handleHello(sender)
         .then(sendResponse)
-        .catch(() => sendResponse(fail('Could not load settings.')));
+        .catch(() => sendResponse(fail(t('loadSettingsFailed'))));
       return true;
     }
 

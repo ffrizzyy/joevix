@@ -1,4 +1,5 @@
 import { browser } from 'wxt/browser';
+import { t } from '../i18n';
 import {
   LIMITS,
   STORAGE_KEYS,
@@ -11,7 +12,7 @@ import { migrate } from './migrate';
 
 export class StorageFullError extends Error {
   constructor() {
-    super('Your browser storage is full.');
+    super(t('storageFull'));
     this.name = 'StorageFullError';
   }
 }

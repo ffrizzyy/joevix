@@ -6,6 +6,7 @@ import { auditTheme, fixThemeContrast } from '../../core/theme/contrast';
 import { fontStack } from '../../core/theme/css';
 import { COLOR_PRESETS } from '../../core/theme/presets';
 import { COLOR_ROLES } from '../../core/theme/roles';
+import { themeLabel } from '../../ui/theme-name';
 import { ColorWheel } from './color-wheel';
 
 export type Draft = {
@@ -31,6 +32,20 @@ const FAMILY_LABELS: Record<ThemeFont['family'], MessageKey> = {
   mono: 'familyMono',
 };
 
+const PRESET_LABELS: Record<string, MessageKey> = {
+  bone: 'presetBone',
+  slate: 'presetSlate',
+  forest: 'presetForest',
+  plum: 'presetPlum',
+  sand: 'presetSand',
+  ink: 'presetInk',
+};
+
+function presetLabel(id: string, fallback: string): string {
+  const key = PRESET_LABELS[id];
+  return key ? t(key) : fallback;
+}
+
 /**
  * Builds an editor draft. `copy` forces a new id, so duplicating a custom
  * theme never overwrites the original on save.
@@ -39,7 +54,7 @@ export function draftFromTheme(theme: Theme, copy = false): Draft {
   const asCopy = copy || theme.builtin;
   return {
     id: asCopy ? null : theme.id,
-    name: asCopy ? `${theme.name} ${t('duplicateSuffix')}` : theme.name,
+    name: asCopy ? `${themeLabel(theme)} ${t('duplicateSuffix')}` : themeLabel(theme),
     colors: { ...theme.colors },
     font: { ...theme.font },
   };
@@ -49,7 +64,7 @@ export function draftToTheme(draft: Draft, id?: string): Theme {
   return {
     schemaVersion: 1,
     id: id ?? draft.id ?? 'custom:draft',
-    name: draft.name.trim() || 'Untitled theme',
+    name: draft.name.trim() || t('untitledTheme'),
     mode: 'custom',
     builtin: false,
     colors: { ...draft.colors },
@@ -158,7 +173,7 @@ export function ThemeEditor(props: Props) {
                 <span key={role} style={{ background: preset.colors[role] }} />
               ))}
             </span>
-            <span>{preset.name}</span>
+            <span>{presetLabel(preset.id, preset.name)}</span>
           </button>
         ))}
       </div>
@@ -170,7 +185,9 @@ export function ThemeEditor(props: Props) {
             hue={hsl.h}
             saturation={hsl.s}
             lightness={hsl.l}
-            onChange={(hue, saturation) => setColor(toHex(hslToRgb({ h: hue, s: saturation, l: hsl.l })))}
+            onChange={(hue, saturation) =>
+              setColor(toHex(hslToRgb({ h: hue, s: saturation, l: hsl.l })))
+            }
           />
 
           <div class="wheel-slider-row">
@@ -192,7 +209,9 @@ export function ThemeEditor(props: Props) {
               }}
               onInput={(event) =>
                 setColor(
-                  toHex(hslToRgb({ h: hsl.h, s: hsl.s, l: Number(event.currentTarget.value) / 100 })),
+                  toHex(
+                    hslToRgb({ h: hsl.h, s: hsl.s, l: Number(event.currentTarget.value) / 100 }),
+                  ),
                 )
               }
             />
@@ -242,9 +261,7 @@ export function ThemeEditor(props: Props) {
               }}
             />
           </div>
-          {hexInvalid ? (
-            <p class="field-error">{t('invalidColor')}</p>
-          ) : null}
+          {hexInvalid ? <p class="field-error">{t('invalidColor')}</p> : null}
 
           <h3 class="label">{t('rgbValue')}</h3>
           <div class="field-row">
@@ -283,14 +300,12 @@ export function ThemeEditor(props: Props) {
                 min={0}
                 max={360}
                 step={1}
-                aria-label="H"
+                aria-label={t('hslHue')}
                 value={Math.round(hsl.h)}
                 onChange={(event) => {
                   const value = Number(event.currentTarget.value);
                   if (!Number.isFinite(value)) return;
-                  setColor(
-                    toHex(hslToRgb({ ...hsl, h: ((value % 360) + 360) % 360 })),
-                  );
+                  setColor(toHex(hslToRgb({ ...hsl, h: ((value % 360) + 360) % 360 })));
                 }}
               />
               <input
@@ -299,16 +314,12 @@ export function ThemeEditor(props: Props) {
                 min={0}
                 max={100}
                 step={1}
-                aria-label="S"
+                aria-label={t('hslSaturation')}
                 value={Math.round(hsl.s * 100)}
                 onChange={(event) => {
                   const value = Number(event.currentTarget.value);
                   if (!Number.isFinite(value)) return;
-                  setColor(
-                    toHex(
-                      hslToRgb({ ...hsl, s: Math.min(1, Math.max(0, value / 100)) }),
-                    ),
-                  );
+                  setColor(toHex(hslToRgb({ ...hsl, s: Math.min(1, Math.max(0, value / 100)) })));
                 }}
               />
               <input
@@ -317,16 +328,12 @@ export function ThemeEditor(props: Props) {
                 min={0}
                 max={100}
                 step={1}
-                aria-label="L"
+                aria-label={t('hslLightness')}
                 value={Math.round(hsl.l * 100)}
                 onChange={(event) => {
                   const value = Number(event.currentTarget.value);
                   if (!Number.isFinite(value)) return;
-                  setColor(
-                    toHex(
-                      hslToRgb({ ...hsl, l: Math.min(1, Math.max(0, value / 100)) }),
-                    ),
-                  );
+                  setColor(toHex(hslToRgb({ ...hsl, l: Math.min(1, Math.max(0, value / 100)) })));
                 }}
               />
             </div>
@@ -372,9 +379,7 @@ export function ThemeEditor(props: Props) {
                 fontFamily: fontStack(draft.font.family),
               }}
             >
-              <h4 style={{ color: draft.colors.text }}>
-                {t('previewLyrics')}
-              </h4>
+              <h4 style={{ color: draft.colors.text }}>{t('previewLyrics')}</h4>
               <p style={{ color: draft.colors.muted }}>
                 <span style={{ color: draft.colors.accent }}>{t('previewLine')}</span>
               </p>
@@ -470,9 +475,7 @@ export function ThemeEditor(props: Props) {
               max={0.1}
               step={0.005}
               value={draft.font.letterSpacingEm}
-              onInput={(event) =>
-                setFont({ letterSpacingEm: Number(event.currentTarget.value) })
-              }
+              onInput={(event) => setFont({ letterSpacingEm: Number(event.currentTarget.value) })}
             />
             <output class="mono value-out">{draft.font.letterSpacingEm.toFixed(3)}em</output>
           </div>

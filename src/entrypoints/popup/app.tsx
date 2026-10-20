@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'preact/hooks';
 import { browser } from 'wxt/browser';
 import { t } from '../../core/i18n';
-import type { SiteState } from '../../core/messaging';
-import { activeTab, openOptions, send } from '../../ui/api';
+import type { Diagnostics, SiteState } from '../../core/messaging';
+import { activeTab, copyText, openOptions, send } from '../../ui/api';
+import { themeLabel } from '../../ui/theme-name';
 
 type Phase = 'loading' | 'unsupported' | 'ready';
 type Notice = { kind: 'info' | 'warning' | 'error'; text: string };
@@ -144,6 +145,51 @@ export function App() {
     window.close();
   }
 
+  async function completeWelcome(themeId: string | null): Promise<void> {
+    setBusy(true);
+    const response = await send({ type: 'complete-welcome', themeId });
+    setBusy(false);
+    if (!response.ok) {
+      setNotice({ kind: 'error', text: response.error });
+      return;
+    }
+    setNotice(null);
+    await load();
+  }
+
+  async function copyDiagnostics(): Promise<void> {
+    const response = await send<Diagnostics>({ type: 'get-diagnostics' });
+    if (!response.ok) {
+      setNotice({ kind: 'error', text: response.error });
+      return;
+    }
+
+    const data = response.data;
+    const adapter = data.adapterId
+      ? `${data.adapterId}${data.adapterVersion ? ` v${data.adapterVersion}` : ''}`
+      : t('diagNone');
+    const lines = [
+      `Joevix ${data.version}`,
+      `${t('diagSite')}: ${data.siteId ?? t('diagNone')}`,
+      `${t('diagAdapter')}: ${adapter}`,
+      `${t('diagSections')}: ${data.sectionsFound}`,
+      data.sectionsMissing.length > 0
+        ? `${t('diagMissing')}: ${data.sectionsMissing.join(', ')}`
+        : null,
+      data.adapterId && !data.hasReport ? t('diagNoReport') : null,
+      new Date(data.createdAt).toISOString(),
+    ].filter((line): line is string => line !== null);
+
+    const copied = await copyText(lines.join('\n'));
+    setNotice({
+      kind: copied ? 'info' : 'error',
+      text: copied ? t('diagnosticsCopied') : t('copyFailed'),
+    });
+  }
+
+  const onboarding = phase === 'ready' && state !== null && !state.settings.onboarded;
+  const welcomeThemes = state ? state.themes.filter((theme) => theme.builtin).slice(0, 3) : [];
+
   return (
     <main class="app">
       <header class="header">
@@ -200,39 +246,68 @@ export function App() {
             </section>
           ) : null}
 
-          <section class="section" aria-labelledby="theme-label">
-            <h2 id="theme-label" class="label">
-              {t('theme')}
-            </h2>
-            <div class="themes">
-              <ThemeTile
-                name="System"
-                colors={systemColors(state)}
-                selected={state.config.themeId === 'system'}
-                disabled={busy || !state.config.enabled}
-                onSelect={() => void chooseTheme('system')}
-              />
-              {state.themes.map((theme) => (
-                <ThemeTile
-                  key={theme.id}
-                  name={theme.name}
-                  colors={[theme.colors.background, theme.colors.text, theme.colors.accent]}
-                  selected={state.config.themeId === theme.id}
-                  disabled={busy || !state.config.enabled}
-                  onSelect={() => void chooseTheme(theme.id)}
-                />
-              ))}
-              <button type="button" class="theme" onClick={() => void openOptions('themes')}>
-                <span class="swatch swatch-add" aria-hidden="true">
-                  +
-                </span>
-                <span class="theme-name">{t('customTheme')}</span>
+          {onboarding ? (
+            <section class="section welcome" aria-labelledby="welcome-title">
+              <h2 id="welcome-title" class="heading">
+                {t('welcomeTitle')}
+              </h2>
+              <p class="hint">{t('welcomeBody')}</p>
+              <div class="themes">
+                {welcomeThemes.map((theme) => (
+                  <ThemeTile
+                    key={theme.id}
+                    name={themeLabel(theme)}
+                    colors={[theme.colors.background, theme.colors.text, theme.colors.accent]}
+                    selected={state?.settings.defaultThemeId === theme.id}
+                    disabled={busy}
+                    onSelect={() => void completeWelcome(theme.id)}
+                  />
+                ))}
+              </div>
+              <button
+                type="button"
+                class="link small"
+                disabled={busy}
+                onClick={() => void completeWelcome(null)}
+              >
+                {t('welcomeSkip')}
               </button>
-            </div>
-            <button type="button" class="link small" onClick={() => void openOptions('themes')}>
-              {t('manageThemes')}
-            </button>
-          </section>
+            </section>
+          ) : (
+            <section class="section" aria-labelledby="theme-label">
+              <h2 id="theme-label" class="label">
+                {t('theme')}
+              </h2>
+              <div class="themes">
+                <ThemeTile
+                  name={t('systemTheme')}
+                  colors={systemColors(state)}
+                  selected={state.config.themeId === 'system'}
+                  disabled={busy || !state.config.enabled}
+                  onSelect={() => void chooseTheme('system')}
+                />
+                {state.themes.map((theme) => (
+                  <ThemeTile
+                    key={theme.id}
+                    name={themeLabel(theme)}
+                    colors={[theme.colors.background, theme.colors.text, theme.colors.accent]}
+                    selected={state.config.themeId === theme.id}
+                    disabled={busy || !state.config.enabled}
+                    onSelect={() => void chooseTheme(theme.id)}
+                  />
+                ))}
+                <button type="button" class="theme" onClick={() => void openOptions('themes')}>
+                  <span class="swatch swatch-add" aria-hidden="true">
+                    +
+                  </span>
+                  <span class="theme-name">{t('customTheme')}</span>
+                </button>
+              </div>
+              <button type="button" class="link small" onClick={() => void openOptions('themes')}>
+                {t('manageThemes')}
+              </button>
+            </section>
+          )}
 
           <section class="section" aria-labelledby="size-label">
             <h2 id="size-label" class="label">
@@ -242,7 +317,7 @@ export function App() {
               <button
                 type="button"
                 class="btn btn-icon"
-                aria-label={t('decreaseText')}
+                aria-label={`${t('decreaseText')}: A−`}
                 disabled={busy || !state.config.enabled}
                 onClick={() => void changeSize(-1)}
               >
@@ -254,7 +329,7 @@ export function App() {
               <button
                 type="button"
                 class="btn btn-icon"
-                aria-label={t('increaseText')}
+                aria-label={`${t('increaseText')}: A+`}
                 disabled={busy || !state.config.enabled}
                 onClick={() => void changeSize(1)}
               >
@@ -305,6 +380,9 @@ export function App() {
             </button>
             <button type="button" class="link" onClick={() => void openOptions('privacy')}>
               {t('privacy')}
+            </button>
+            <button type="button" class="link" onClick={() => void copyDiagnostics()}>
+              {t('copyDiagnostics')}
             </button>
           </footer>
         </>

@@ -1,5 +1,6 @@
 import type { JSX } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
+import { t } from '../../core/i18n';
 import { hslToRgb } from '../../core/theme/color';
 
 const SIZE = 200;
@@ -91,10 +92,7 @@ export function ColorWheel(props: Props) {
     else return;
 
     event.preventDefault();
-    onChangeRef.current(
-      ((hue % 360) + 360) % 360,
-      Math.min(1, Math.max(0, saturation)),
-    );
+    onChangeRef.current(((hue % 360) + 360) % 360, Math.min(1, Math.max(0, saturation)));
   }
 
   return (
@@ -106,18 +104,14 @@ export function ColorWheel(props: Props) {
         height={SIZE}
         tabIndex={0}
         role="img"
-        aria-label={`Hue ${Math.round(props.hue)}, saturation ${Math.round(
+        aria-label={`${t('hue')} ${Math.round(props.hue)}, ${t('saturation')} ${Math.round(
           props.saturation * 100,
-        )} percent, lightness ${Math.round(
+        )} ${t('wheelPercent')}, ${t('lightness')} ${Math.round(
           props.lightness * 100,
-        )} percent. Use arrow keys to adjust hue and saturation.`}
+        )} ${t('wheelPercent')}. ${t('wheelHint')}`}
         onKeyDown={onKeyDown}
       />
-      <span
-        class="wheel-handle"
-        aria-hidden="true"
-        style={{ left: `${left}%`, top: `${top}%` }}
-      />
+      <span class="wheel-handle" aria-hidden="true" style={{ left: `${left}%`, top: `${top}%` }} />
     </div>
   );
 }

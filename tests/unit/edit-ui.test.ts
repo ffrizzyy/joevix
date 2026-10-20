@@ -48,9 +48,7 @@ function setup() {
 }
 
 function click(shadow: ShadowRoot, action: string, key?: string): void {
-  const selector = key
-    ? `[data-jv-key="${key}"] [data-jv="${action}"]`
-    : `[data-jv="${action}"]`;
+  const selector = key ? `[data-jv-key="${key}"] [data-jv="${action}"]` : `[data-jv="${action}"]`;
   const button = shadow.querySelector<HTMLButtonElement>(selector);
   if (!button) throw new Error(`button ${action} ${key ?? ''} missing`);
   button.click();
@@ -66,9 +64,9 @@ describe('edit session', () => {
     expect(shadow.querySelectorAll('[data-jv-key]')).toHaveLength(3);
     expect(shadow.querySelector('[data-jv-key="a"] .name')?.textContent).toBe('Alpha');
     expect(shadow.querySelector('[data-jv-key="a"] svg')).not.toBeNull();
-    expect(shadow.querySelector('[data-jv-key="a"] [data-jv="up"]')?.getAttribute('aria-label')).toBe(
-      'Move up: Alpha',
-    );
+    expect(
+      shadow.querySelector('[data-jv-key="a"] [data-jv="up"]')?.getAttribute('aria-label'),
+    ).toBe('Move up: Alpha');
   });
 
   it('moves a section with the keyboard buttons and undoes it', () => {
@@ -76,6 +74,7 @@ describe('edit session', () => {
 
     click(shadow, 'up', 'b');
     expect(lastDraft(onChange).order).toEqual(['b', 'a', 'c']);
+    expect(shadow.querySelector('.status')?.textContent).toBe('Section moved to position 1');
 
     click(shadow, 'undo');
     expect(lastDraft(onChange).order).toEqual(['a', 'b', 'c']);

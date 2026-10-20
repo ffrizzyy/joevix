@@ -350,6 +350,7 @@ function reportSections(): void {
     found: summary?.found ?? 0,
     missing: summary?.missing ?? 0,
     reorderable: summary?.reorderable ?? 0,
+    missingKeys: detection?.missing ?? [],
   };
 
   const serialized = JSON.stringify(report);
@@ -426,6 +427,19 @@ function boot(): void {
         sendResponse({ ok: startEdit() });
       } else {
         // The payload may still be in flight; start as soon as it lands.
+        pendingEdit = true;
+        sendResponse({ ok: true });
+      }
+      return false;
+    }
+
+    if (message.type === 'edit-toggle') {
+      if (editSession) {
+        endEdit();
+        sendResponse({ ok: true });
+      } else if (payload?.adapter) {
+        sendResponse({ ok: startEdit() });
+      } else {
         pendingEdit = true;
         sendResponse({ ok: true });
       }

@@ -7,12 +7,12 @@ nothing else.
 
 In `chrome.storage.local`, on this device only:
 
-| Key | Contents |
-|---|---|
-| `joevix:meta` | Schema version number |
-| `joevix:settings` | "Turn off everywhere" flag, onboarding flag, default theme id |
-| `joevix:themes` | Themes you created (six colors and five font values each) |
-| `joevix:sites` | Per-site settings: site hostname, theme id, section order, hidden sections, layout, width, font size, adapter id |
+| Key               | Contents                                                                                                         |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `joevix:meta`     | Schema version number                                                                                            |
+| `joevix:settings` | "Turn off everywhere" flag, onboarding flag, default theme id                                                    |
+| `joevix:themes`   | Themes you created (six colors and five font values each)                                                        |
+| `joevix:sites`    | Per-site settings: site hostname, theme id, section order, hidden sections, layout, width, font size, adapter id |
 
 ## What is not stored
 
@@ -36,6 +36,12 @@ beacon calls, and no remote code, fonts, or images. The generated CSS cannot con
 Site access is an optional host permission granted one origin at a time, when you turn Joevix on
 for that site. It can be revoked at any time from the browser's extension settings or with
 **Delete all my data**.
+
+## Diagnostics
+
+**Copy diagnostics** writes a short report to the clipboard: version, site, adapter id and
+version, section counts, and the labels of sections that did not match. It contains adapter
+labels and no page text. It is never sent anywhere.
 
 ## Deleting your data
 

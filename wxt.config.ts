@@ -46,6 +46,19 @@ export default defineConfig({
     options_ui: {
       open_in_tab: true,
     },
+    commands: {
+      _execute_action: {
+        suggested_key: { default: 'Alt+Shift+J' },
+      },
+      'toggle-edit': {
+        suggested_key: { default: 'Alt+Shift+E' },
+        description: 'Start or cancel layout editing',
+      },
+      'cycle-theme': {
+        suggested_key: { default: 'Alt+Shift+T' },
+        description: 'Switch to the next theme on this site',
+      },
+    },
     ...(browser === 'firefox'
       ? {
           optional_permissions: ['https://*/*', 'http://*/*'],

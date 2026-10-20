@@ -1,0 +1,68 @@
+# Testing (M7)
+
+## Commands
+
+```bash
+pnpm typecheck
+pnpm lint
+pnpm test          # Vitest: unit, schema, jsdom
+pnpm test:e2e      # builds .output/e2e-chrome, then Playwright + axe
+pnpm check:size    # after a production build
+```
+
+`pnpm test:e2e` runs `wxt build` and `scripts/make-e2e-extension.mjs`. It uses Playwright's
+bundled Chromium (`channel: 'chromium'`), not the system browser, because branded Chrome builds
+may ignore `--load-extension` in automation.
+
+## Test build
+
+Playwright cannot click a native host-permission prompt. The test script copies
+`.output/chrome-mv3` to `.output/e2e-chrome` and changes **only the manifest**:
+
+- adds `host_permissions: ["https://genius.com/*"]`;
+- adds a `content_scripts` entry for the same origin, so the page script runs without runtime
+  registration.
+
+Everything else (service worker, schemas, adapters, popup, options) is the production bundle.
+The patch lives in `scripts/make-e2e-extension.mjs` and never touches `.output/chrome-mv3`.
+
+The lyric fixture is served by `context.route()` at
+`https://genius.com/Queen-bohemian-rhapsody-lyrics`, so the bundled Genius adapter matches
+without a local server or real network. Subresources are fulfilled with `204`.
+
+## Coverage
+
+| Spec file               | What it proves                                                               |
+| ----------------------- | ---------------------------------------------------------------------------- |
+| `theme.spec.ts`         | Enable, default theme, theme switch, reload persistence, reset, no network   |
+| `edit.spec.ts`          | Reorder, hide, width, Done persistence, Escape restores the saved layout     |
+| `accessibility.spec.ts` | axe-core on options and popup, 320px width, arrow-key tabs, focusable import |
+| `shortcuts.spec.ts`     | All three commands registered; `edit-toggle` starts and cancels a session    |
+
+The browser-level shortcut keypresses themselves cannot be dispatched from Playwright; the
+suite checks registration plus the command handler's content-script path. Remap and press the
+keys manually when changing the manifest commands.
+
+## axe-core
+
+`runAxe()` loads `axe-core/axe.min.js` with `page.addInitScript`, which runs outside the page CSP.
+It reloads and audits the options page and an inactive popup tab. The popup tab is opened with
+`chrome.tabs.create({ active: false })` after activating the fixture tab, so its active-tab query
+sees the lyric page. The audit must return zero WCAG A/AA violations.
+
+## Size budget
+
+`scripts/check-size.mjs` sums the Chrome/Firefox output and gzips `inject.js`:
+
+- package: **250 KB** (NFR-01);
+- content script: **40 KB gzip**.
+
+The build currently has roughly 14 KB of package headroom. Re-run the script after adding an
+adapter or a dependency; CI fails if either limit is crossed.
+
+## Still manual
+
+- Screen-reader pass with NVDA or VoiceOver (edit bar, live announcements, focus restoration).
+- Windows High Contrast / forced-colors visual check.
+- Firefox install and permission flow; the Playwright suite is Chromium-only.
+- Real Chrome/Firefox shortcut UI remapping.

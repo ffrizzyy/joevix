@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Joevix E2E lyrics</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: sans-serif;
+      }
+      main {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 12px;
+      }
+      main > * {
+        min-height: 40px;
+        padding: 8px;
+        border: 1px solid #ddd;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div data-testid="song-header">
+        <h1>Test Song</h1>
+        <p>Test Artist</p>
+      </div>
+      <div data-lyrics-container="true">First lyric line<br />Second lyric line</div>
+      <aside class="RecommendedSongs__Container-test">Recommended</aside>
+      <section class="SongCommentsWithAds__Container-test">Comments</section>
+    </main>
+  </body>
+</html>
