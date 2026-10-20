@@ -1,0 +1,81 @@
+:root {
+  --jx-bg: #fbfbfa;
+  --jx-surface: #ffffff;
+  --jx-text: #111111;
+  --jx-muted: #726f6c;
+  --jx-border: #eaeaea;
+  --jx-border-strong: #8f8d89;
+  --jx-key: #f7f6f3;
+  --jx-primary: #111111;
+  --jx-primary-hover: #333333;
+
+  --jx-font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --jx-font-heading: ui-serif, Georgia, 'Times New Roman', serif;
+  --jx-font-mono: ui-monospace, 'Cascadia Mono', 'SF Mono', Consolas, monospace;
+
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --jx-bg: #191919;
+    --jx-surface: #202020;
+    --jx-text: #ededeb;
+    --jx-muted: #9b9a97;
+    --jx-border: #2f2f2f;
+    --jx-border-strong: #6b6a67;
+    --jx-key: #262626;
+    --jx-primary: #ededeb;
+    --jx-primary-hover: #f7f6f4;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--jx-bg);
+  color: var(--jx-text);
+  font-family: var(--jx-font-ui);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--jx-text);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--jx-font-heading);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
