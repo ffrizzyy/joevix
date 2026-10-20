@@ -24,7 +24,7 @@ Known gaps in the current build:
   tested, but no adapter ships yet, so **Edit layout** is disabled with an explanation.
 - The first-run welcome card (spec 7.1) is not drawn yet; the popup opens straight to the
   per-site enable prompt.
-- Playwright end-to-end tests are not wired up yet (unit coverage is 82 tests).
+- Playwright end-to-end tests are not wired up yet (unit coverage is 91 tests).
 
 ## Requirements
 

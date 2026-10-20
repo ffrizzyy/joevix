@@ -311,7 +311,7 @@ export function App() {
                     <article class="card theme-card" key={theme.id}>
                       <ThemeSwatch theme={theme} />
                       <h3 class="card-title">{theme.name}</h3>
-                      <p class="meta">{theme.mode}</p>
+                      <p class="meta">{theme.font.sizePx}px</p>
                       <div class="card-actions">
                         <button
                           type="button"

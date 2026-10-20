@@ -108,7 +108,9 @@ export function ColorWheel(props: Props) {
         role="img"
         aria-label={`Hue ${Math.round(props.hue)}, saturation ${Math.round(
           props.saturation * 100,
-        )} percent. Use arrow keys to adjust.`}
+        )} percent, lightness ${Math.round(
+          props.lightness * 100,
+        )} percent. Use arrow keys to adjust hue and saturation.`}
         onKeyDown={onKeyDown}
       />
       <span

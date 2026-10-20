@@ -77,6 +77,7 @@ export function ThemeEditor(props: Props) {
   const hexFocused = useRef(false);
   const rgb = parseColor(selected) ?? { r: 0, g: 0, b: 0 };
   const hsl = rgbToHsl(rgb);
+  const hexInvalid = hexText.trim().length > 0 && normalizeColor(hexText) === null;
 
   useEffect(() => {
     // Never rewrite the field under the caret: it would turn "#abc" into
@@ -172,27 +173,8 @@ export function ThemeEditor(props: Props) {
             onChange={(hue, saturation) => setColor(toHex(hslToRgb({ h: hue, s: saturation, l: hsl.l })))}
           />
 
-          <div class="role-grid" role="group" aria-label={t('colors')}>
-            {COLOR_ROLES.map((item) => (
-              <button
-                key={item}
-                type="button"
-                class="role"
-                aria-pressed={role === item}
-                onClick={() => setRole(item)}
-              >
-                <span
-                  class="role-dot"
-                  aria-hidden="true"
-                  style={{ background: draft.colors[item] }}
-                />
-                {t(ROLE_LABELS[item])}
-              </button>
-            ))}
-          </div>
-
-          <div class="field-row wheel-slider-row">
-            <label class="field-label" for="lightness">
+          <div class="wheel-slider-row">
+            <label class="label" for="lightness">
               {t('lightness')}
             </label>
             <input
@@ -215,6 +197,25 @@ export function ThemeEditor(props: Props) {
               }
             />
           </div>
+
+          <div class="role-grid" role="group" aria-label={t('colors')}>
+            {COLOR_ROLES.map((item) => (
+              <button
+                key={item}
+                type="button"
+                class="role"
+                aria-pressed={role === item}
+                onClick={() => setRole(item)}
+              >
+                <span
+                  class="role-dot"
+                  aria-hidden="true"
+                  style={{ background: draft.colors[item] }}
+                />
+                {t(ROLE_LABELS[item])}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div>
@@ -226,6 +227,7 @@ export function ThemeEditor(props: Props) {
               spellcheck={false}
               value={hexText}
               aria-label={t('hexValue')}
+              aria-invalid={hexInvalid}
               onInput={(event) => {
                 const value = event.currentTarget.value;
                 setHexText(value);
@@ -240,6 +242,9 @@ export function ThemeEditor(props: Props) {
               }}
             />
           </div>
+          {hexInvalid ? (
+            <p class="field-error">{t('invalidColor')}</p>
+          ) : null}
 
           <h3 class="label">{t('rgbValue')}</h3>
           <div class="field-row">
@@ -345,21 +350,17 @@ export function ThemeEditor(props: Props) {
             ) : null}
           </div>
 
-          {failing.length === 0 ? (
-            <p class="muted small-note">{t('contrastAllPass')}</p>
-          ) : (
-            <ul class="contrast-list">
-              {checks.map((check) => (
-                <li class="contrast-row" key={check.id}>
-                  <span>{check.label}</span>
-                  <span class="contrast-ratio">{check.display}</span>
-                  <span class={`tag ${check.passes ? 'tag-pass' : 'tag-fail'}`}>
-                    {check.passes ? t('contrastPass') : t('contrastFail')}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <ul class="contrast-list">
+            {checks.map((check) => (
+              <li class="contrast-row" key={check.id}>
+                <span>{check.label}</span>
+                <span class="contrast-ratio">{check.display}</span>
+                <span class={`tag ${check.passes ? 'tag-pass' : 'tag-fail'}`}>
+                  {check.passes ? t('contrastPass') : t('contrastFail')}
+                </span>
+              </li>
+            ))}
+          </ul>
 
           <section class="preview-block">
             <h3 class="label">{t('previewTitle')}</h3>
@@ -371,7 +372,7 @@ export function ThemeEditor(props: Props) {
                 fontFamily: fontStack(draft.font.family),
               }}
             >
-              <h4 style={{ color: draft.colors.text, fontFamily: fontStack('serif') }}>
+              <h4 style={{ color: draft.colors.text }}>
                 {t('previewLyrics')}
               </h4>
               <p style={{ color: draft.colors.muted }}>
