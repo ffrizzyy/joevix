@@ -38,6 +38,20 @@ export default defineConfig({
     // Content scripts are registered per origin at runtime, never declared here.
     content_scripts: [],
     web_accessible_resources: [],
+    icons: {
+      16: 'icon/16.png',
+      32: 'icon/32.png',
+      48: 'icon/48.png',
+      128: 'icon/128.png',
+    },
+    action: {
+      default_title: 'Joevix',
+      default_popup: 'popup.html',
+      default_icon: {
+        16: 'icon/16.png',
+        32: 'icon/32.png',
+      },
+    },
     content_security_policy: {
       extension_pages:
         // Vite injects <style> during development; production stays strict.

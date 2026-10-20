@@ -3,6 +3,19 @@
 All notable changes to Joevix are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and releases use semantic versioning.
 
+## [1.0.1] — 2026-10-20
+
+### Added
+
+- Joevix favicon for the options and popup pages, with an SVG source in `public/favicon.svg`.
+- 16/32/48/128 px extension icons and 16/32 px toolbar action icons.
+- `pnpm icons` to regenerate the PNG set from the SVG with Playwright Chromium.
+
+### Changed
+
+- The manifest policy check now requires the extension and action icon entries.
+- Version bumped to 1.0.1.
+
 ## [1.0.0] — 2026-10-20
 
 First packaged release. Joevix is a local-only Manifest V3 extension for Chrome, Edge, Brave,

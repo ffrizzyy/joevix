@@ -60,7 +60,7 @@ sees the lyric page. The audit must return zero WCAG A/AA violations.
 - package: **250 KB** (NFR-01);
 - content script: **40 KB gzip**.
 
-The build currently has roughly 14 KB of package headroom. Re-run the script after adding an
+The build currently has roughly 8 KB of package headroom. Re-run the script after adding an
 adapter or a dependency; CI fails if either limit is crossed.
 
 ## Security checks
@@ -78,8 +78,9 @@ runtime evidence:
 
 `pnpm check:manifest` locks the built manifests to the spec: exact permission sets, empty
 `content_scripts` and `web_accessible_resources`, no wildcard `<all_urls>`, the strict CSP plus
-Trusted Types, and the correct Firefox background/optional-permission keys. CI runs
-`pnpm audit --audit-level high`; CodeQL and Dependabot run alongside CI.
+Trusted Types, the extension/action icon entries, and the correct Firefox
+background/optional-permission keys. CI runs `pnpm audit --audit-level high`; CodeQL and
+Dependabot run alongside CI.
 
 ## Still manual
 

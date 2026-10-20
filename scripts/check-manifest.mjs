@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const packages = [
@@ -59,6 +59,20 @@ for (const pkg of packages) {
     `${label}: externally_connectable must not be declared`,
   );
   check(manifest.action?.default_popup === 'popup.html', `${label}: action popup is missing`);
+  check(
+    manifest.icons?.['16'] === 'icon/16.png' && manifest.icons?.['128'] === 'icon/128.png',
+    `${label}: extension icons are missing`,
+  );
+  check(
+    manifest.action?.default_icon?.['16'] === 'icon/16.png',
+    `${label}: action icon is missing`,
+  );
+  check(
+    ['icon/16.png', 'icon/32.png', 'icon/48.png', 'icon/128.png', 'favicon.svg'].every((file) =>
+      existsSync(resolve(pkg.dir, file)),
+    ),
+    `${label}: favicon or icon files are missing from the build`,
+  );
   check(
     sameSet(manifest.commands ? Object.keys(manifest.commands) : [], [
       '_execute_action',

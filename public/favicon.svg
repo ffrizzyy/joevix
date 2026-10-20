@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Joevix">
+  <rect width="128" height="128" rx="28" fill="#1f6c9f"/>
+  <path
+    d="M80 38v43c0 10.5-8.2 17-20 17-8.4 0-14.8-3.2-18.8-8.6"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="13"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <circle cx="80" cy="27" r="7" fill="#ffffff" />
+</svg>

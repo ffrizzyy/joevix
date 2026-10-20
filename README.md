@@ -1,8 +1,8 @@
 # Joevix
 
 Restyle and rearrange the pages you visit — on your own screen only. Joevix is a Manifest V3
-browser extension with no network code, no accounts, and no analytics. Version **1.0.0** is the
-first packaged release for Chrome, Edge, Brave, and Firefox.
+browser extension with no network code, no accounts, and no analytics. Version **1.0.1** is the
+current packaged release for Chrome, Edge, Brave, and Firefox.
 
 The full specification is in [`joevix-extension-spec.md`](./joevix-extension-spec.md) (v0.2).
 
@@ -30,9 +30,10 @@ Known gaps in this build:
   screen-reader pass are still release-checklist items (see `docs/testing.md` and
   `docs/release-1.0.md`).
 
-M8 adds the 1.0.0 version, Trusted Types on extension pages, manifest policy checks, CodeQL and
-Dependabot, a release packaging script with SHA-256 checksums, a security E2E suite, and the
-release/rollback documentation. See [`docs/release-1.0.md`](./docs/release-1.0.md).
+M8 shipped the 1.0.0 release: Trusted Types on extension pages, manifest policy checks, CodeQL
+and Dependabot, a release packaging script with SHA-256 checksums, a security E2E suite, and the
+release/rollback documentation. Version 1.0.1 adds the Joevix favicon and extension/action
+icons. See [`docs/release-1.0.md`](./docs/release-1.0.md).
 
 ## Requirements
 
@@ -52,13 +53,14 @@ pnpm test:e2e         # builds a test copy, then Playwright + axe-core
 pnpm check:manifest   # manifest permissions, CSP, and entry-point policy
 pnpm check:size       # 250 KB package / 40 KB gzip content-script budget
 pnpm package:release  # both ZIPs, manifest/size checks, SHA-256 checksums
+pnpm icons            # regenerate favicon PNGs (requires Playwright Chromium)
 pnpm audit --audit-level high
 pnpm lint             # ESLint, including the banned-API list
 ```
 
 ## Install a release build
 
-Download `joevix-1.0.0-chrome.zip` or `joevix-1.0.0-firefox.zip` from the
+Download `joevix-1.0.1-chrome.zip` or `joevix-1.0.1-firefox.zip` from the
 [latest release](https://github.com/ffrizzyy/joevix/releases/latest), verify it against
 `SHA256SUMS.txt`, then unzip it.
 
@@ -71,7 +73,7 @@ Download `joevix-1.0.0-chrome.zip` or `joevix-1.0.0-firefox.zip` from the
 Verify a download:
 
 ```powershell
-Get-FileHash .\joevix-1.0.0-chrome.zip -Algorithm SHA256
+Get-FileHash .\joevix-1.0.1-chrome.zip -Algorithm SHA256
 Get-Content .\SHA256SUMS.txt
 ```
 
@@ -149,7 +151,7 @@ manifests keep only `storage`, `activeTab`, and `scripting`, keep `content_scrip
 Release archives are produced by `pnpm package:release`, which writes
 `releases/v<version>/`, `SHA256SUMS.txt`, and `release.json`. See
 [`docs/release-1.0.md`](./docs/release-1.0.md) for the 1.0.0 evidence table, manual checks, and
-rollback procedure.
+rollback procedure. The 1.0.1 patch only adds the icon set and its manifest policy check.
 
 ## Privacy
 
@@ -164,6 +166,7 @@ src/entrypoints/   background, inject (content), popup, options
 src/core/          pure TypeScript: model, color, contrast, css, site, layout, storage
 src/ui/            shared tokens and helpers
 src/adapters/      bundled per-site adapters (JSON + registry)
+public/            favicon and generated extension/action icons
 tests/unit/        Vitest unit and jsdom tests
 tests/e2e/         Playwright extension tests and axe audits
 docs/              privacy policy, adapter guide, layout editing, testing, release record

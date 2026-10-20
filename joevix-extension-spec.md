@@ -310,8 +310,9 @@ joevix/
   tests/
     unit/
     fixtures/         (saved HTML pages)
+  public/             (favicon.svg, icon/*.png)
   docs/               (privacy policy, adapter guide)
-  .github/workflows/  (ci.yml)
+  .github/workflows/  (ci.yml, codeql.yml, release.yml)
 ```
 
 ---
