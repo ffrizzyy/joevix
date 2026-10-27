@@ -1,7 +1,7 @@
 # Joevix
 
 Restyle and rearrange the pages you visit — on your own screen only. Joevix is a Manifest V3
-browser extension with no network code, no accounts, and no analytics. Version **1.0.1** is the
+browser extension with no network code, no accounts, and no analytics. Version **1.0.2** is the
 current packaged release for Chrome, Edge, Brave, and Firefox.
 
 The full specification is in [`joevix-extension-spec.md`](./joevix-extension-spec.md) (v0.2).
@@ -33,7 +33,10 @@ Known gaps in this build:
 M8 shipped the 1.0.0 release: Trusted Types on extension pages, manifest policy checks, CodeQL
 and Dependabot, a release packaging script with SHA-256 checksums, a security E2E suite, and the
 release/rollback documentation. Version 1.0.1 adds the Joevix favicon and extension/action
-icons. See [`docs/release-1.0.md`](./docs/release-1.0.md).
+icons. Version 1.0.2 applies the design-engineering motion rules: press feedback, strong
+ease-out curves, pointer-gated hover states, reduced-motion handling, and Playwright checks for
+all of them. See [`docs/design.md`](./docs/design.md) and
+[`docs/release-1.0.md`](./docs/release-1.0.md).
 
 ## Requirements
 
@@ -60,7 +63,7 @@ pnpm lint             # ESLint, including the banned-API list
 
 ## Install a release build
 
-Download `joevix-1.0.1-chrome.zip` or `joevix-1.0.1-firefox.zip` from the
+Download `joevix-1.0.2-chrome.zip` or `joevix-1.0.2-firefox.zip` from the
 [latest release](https://github.com/ffrizzyy/joevix/releases/latest), verify it against
 `SHA256SUMS.txt`, then unzip it.
 
@@ -73,7 +76,7 @@ Download `joevix-1.0.1-chrome.zip` or `joevix-1.0.1-firefox.zip` from the
 Verify a download:
 
 ```powershell
-Get-FileHash .\joevix-1.0.1-chrome.zip -Algorithm SHA256
+Get-FileHash .\joevix-1.0.2-chrome.zip -Algorithm SHA256
 Get-Content .\SHA256SUMS.txt
 ```
 
@@ -151,7 +154,8 @@ manifests keep only `storage`, `activeTab`, and `scripting`, keep `content_scrip
 Release archives are produced by `pnpm package:release`, which writes
 `releases/v<version>/`, `SHA256SUMS.txt`, and `release.json`. See
 [`docs/release-1.0.md`](./docs/release-1.0.md) for the 1.0.0 evidence table, manual checks, and
-rollback procedure. The 1.0.1 patch only adds the icon set and its manifest policy check.
+rollback procedure. The 1.0.1 patch adds the icon set; 1.0.2 adds the motion system and its
+Playwright checks.
 
 ## Privacy
 
@@ -169,6 +173,6 @@ src/adapters/      bundled per-site adapters (JSON + registry)
 public/            favicon and generated extension/action icons
 tests/unit/        Vitest unit and jsdom tests
 tests/e2e/         Playwright extension tests and axe audits
-docs/              privacy policy, adapter guide, layout editing, testing, release record
+docs/              privacy, adapter, layout, design, testing, and release records
 releases/          local packaged artifacts and checksums (git-ignored)
 ```

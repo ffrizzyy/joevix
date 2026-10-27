@@ -1,6 +1,6 @@
 {
   "name": "joevix",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "type": "module",
   "description": "Restyle and rearrange pages on your own screen. Local only.",

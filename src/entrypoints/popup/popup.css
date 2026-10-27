@@ -75,6 +75,15 @@ body {
   background: transparent;
   cursor: pointer;
   text-align: left;
+  transition:
+    transform var(--jx-duration-press) var(--jx-ease-out),
+    background-color var(--jx-duration-ui) ease,
+    border-color var(--jx-duration-ui) ease,
+    box-shadow var(--jx-duration-ui) ease;
+}
+
+.theme:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .theme[aria-pressed='true'] {
@@ -85,6 +94,12 @@ body {
 .theme:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .theme:hover:not(:disabled) {
+    background: var(--jx-key);
+  }
 }
 
 .swatch {
@@ -138,11 +153,17 @@ body {
   height: 20px;
   border-radius: 999px;
   background: var(--jx-border-strong);
-  transition: background-color 150ms ease;
+  transition:
+    transform var(--jx-duration-press) var(--jx-ease-out),
+    background-color var(--jx-duration-ui) ease;
 }
 
 .switch[aria-checked='true'] .switch-track {
   background: var(--jx-text);
+}
+
+.switch:active:not(:disabled) .switch-track {
+  transform: scale(0.96);
 }
 
 .switch-knob {
@@ -153,7 +174,7 @@ body {
   height: 16px;
   border-radius: 50%;
   background: var(--jx-surface);
-  transition: transform 150ms ease;
+  transition: transform var(--jx-duration-ui) var(--jx-ease-out);
 }
 
 .switch[aria-checked='true'] .switch-knob {
@@ -181,19 +202,26 @@ body {
   background: transparent;
   cursor: pointer;
   min-height: 36px;
-}
-
-.btn:hover:not(:disabled) {
-  background: var(--jx-key);
+  transition:
+    transform var(--jx-duration-press) var(--jx-ease-out),
+    background-color var(--jx-duration-ui) ease,
+    border-color var(--jx-duration-ui) ease,
+    color var(--jx-duration-ui) ease;
 }
 
 .btn:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 .btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover:not(:disabled) {
+    background: var(--jx-key);
+  }
 }
 
 .btn-icon {
@@ -207,8 +235,10 @@ body {
   color: var(--jx-bg);
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: var(--jx-primary-hover);
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover:not(:disabled) {
+    background: var(--jx-primary-hover);
+  }
 }
 
 .enable {
@@ -221,6 +251,19 @@ body {
 .enable-text {
   margin: 0;
   font-size: 13px;
+}
+
+.welcome {
+  transition:
+    opacity 200ms var(--jx-ease-out),
+    transform 200ms var(--jx-ease-out);
+}
+
+@starting-style {
+  .welcome {
+    opacity: 0;
+    transform: translateY(4px);
+  }
 }
 
 .actions {
@@ -267,10 +310,13 @@ body {
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
+  transition: color var(--jx-duration-ui) ease;
 }
 
-.link:hover {
-  color: var(--jx-text);
+@media (hover: hover) and (pointer: fine) {
+  .link:hover {
+    color: var(--jx-text);
+  }
 }
 
 .small {
@@ -285,6 +331,16 @@ body {
   border-radius: 4px;
   font-size: 12px;
   line-height: 1.45;
+  transition:
+    opacity 180ms var(--jx-ease-out),
+    transform 180ms var(--jx-ease-out);
+}
+
+@starting-style {
+  .notice {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
 }
 
 .notice-info {

@@ -32,15 +32,20 @@ body {
   color: var(--jx-muted);
   cursor: pointer;
   white-space: nowrap;
-}
-
-.tab:hover {
-  color: var(--jx-text);
+  transition:
+    color var(--jx-duration-ui) ease,
+    border-color var(--jx-duration-ui) ease;
 }
 
 .tab[aria-selected='true'] {
   color: var(--jx-text);
   border-bottom-color: var(--jx-text);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tab:hover {
+    color: var(--jx-text);
+  }
 }
 
 .panel {
@@ -175,19 +180,38 @@ body {
   border-radius: 4px;
   background: transparent;
   cursor: pointer;
-}
-
-.btn:hover:not(:disabled) {
-  background: var(--jx-key);
+  transition:
+    transform var(--jx-duration-press) var(--jx-ease-out),
+    background-color var(--jx-duration-ui) ease,
+    border-color var(--jx-duration-ui) ease,
+    color var(--jx-duration-ui) ease;
 }
 
 .btn:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: scale(0.97);
 }
 
 .btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover:not(:disabled) {
+    background: var(--jx-key);
+  }
+}
+
+.btn-primary {
+  border-color: var(--jx-primary);
+  background: var(--jx-primary);
+  color: var(--jx-bg);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover:not(:disabled) {
+    background: var(--jx-primary-hover);
+  }
 }
 
 .btn-danger {
@@ -232,6 +256,16 @@ body {
   padding: 8px 10px;
   border-radius: 4px;
   font-size: 13px;
+  transition:
+    opacity 180ms var(--jx-ease-out),
+    transform 180ms var(--jx-ease-out);
+}
+
+@starting-style {
+  .notice {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
 }
 
 .notice-info {
@@ -268,11 +302,17 @@ body {
   height: 20px;
   border-radius: 999px;
   background: var(--jx-border-strong);
-  transition: background-color 150ms ease;
+  transition:
+    transform var(--jx-duration-press) var(--jx-ease-out),
+    background-color var(--jx-duration-ui) ease;
 }
 
 .switch[aria-checked='true'] .switch-track {
   background: var(--jx-text);
+}
+
+.switch:active:not(:disabled) .switch-track {
+  transform: scale(0.96);
 }
 
 .switch-knob {
@@ -283,7 +323,7 @@ body {
   height: 16px;
   border-radius: 50%;
   background: var(--jx-surface);
-  transition: transform 150ms ease;
+  transition: transform var(--jx-duration-ui) var(--jx-ease-out);
 }
 
 .switch[aria-checked='true'] .switch-knob {
@@ -460,10 +500,21 @@ body {
   font-size: 12px;
   text-align: left;
   cursor: pointer;
+  transition:
+    transform var(--jx-duration-press) var(--jx-ease-out),
+    background-color var(--jx-duration-ui) ease,
+    border-color var(--jx-duration-ui) ease;
 }
 
-.preset:hover {
-  border-color: var(--jx-text);
+.preset:active {
+  transform: scale(0.98);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .preset:hover {
+    border-color: var(--jx-text);
+    background: var(--jx-key);
+  }
 }
 
 .preset-chips {
@@ -495,11 +546,26 @@ body {
   background: transparent;
   font-size: 12px;
   cursor: pointer;
+  transition:
+    transform var(--jx-duration-press) var(--jx-ease-out),
+    background-color var(--jx-duration-ui) ease,
+    border-color var(--jx-duration-ui) ease,
+    box-shadow var(--jx-duration-ui) ease;
+}
+
+.role:active {
+  transform: scale(0.98);
 }
 
 .role[aria-pressed='true'] {
   border-color: var(--jx-text);
   box-shadow: inset 0 0 0 1px var(--jx-text);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .role:hover {
+    background: var(--jx-key);
+  }
 }
 
 .role-dot {
@@ -672,6 +738,9 @@ body {
   background: transparent;
   font-size: 13px;
   cursor: pointer;
+  transition:
+    background-color var(--jx-duration-ui) ease,
+    color var(--jx-duration-ui) ease;
 }
 
 .segment + .segment {
@@ -681,6 +750,12 @@ body {
 .segment[aria-pressed='true'] {
   background: var(--jx-text);
   color: var(--jx-bg);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .segment:hover:not([aria-pressed='true']) {
+    background: var(--jx-key);
+  }
 }
 
 @media (max-width: 680px) {

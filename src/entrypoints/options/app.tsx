@@ -307,7 +307,7 @@ export function App() {
             <>
               <div class="row">
                 <h2 class="section-title tight">{t('builtInThemes')}</h2>
-                <button type="button" class="btn" onClick={() => startNew()}>
+                <button type="button" class="btn btn-primary" onClick={() => startNew()}>
                   {t('newTheme')}
                 </button>
               </div>

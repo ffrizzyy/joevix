@@ -56,6 +56,7 @@ const CSS = `
   --jv-border: #d9d7d0;
   --jv-accent: #2f6f4f;
   --jv-surface: #f4f3ef;
+  --jv-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 13px;
   line-height: 1.4;
@@ -92,9 +93,16 @@ button {
   border-radius: 8px;
   padding: 5px 9px;
   cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
 }
 button:disabled { opacity: 0.45; cursor: default; }
 button[aria-pressed='true'] { border-color: var(--jv-accent); }
+@media (hover: hover) and (pointer: fine) {
+  button:hover:not(:disabled) { background: var(--jv-bg); }
+}
 button:focus-visible,
 input:focus-visible,
 [tabindex]:focus-visible {
@@ -125,6 +133,9 @@ input:focus-visible,
   border: 1px solid var(--jv-border);
   border-radius: 8px;
   background: var(--jv-surface);
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
 }
 .row[data-draggable='true'] { cursor: grab; }
 .row[data-drop='true'] { border-color: var(--jv-accent); }
@@ -164,7 +175,18 @@ button.icon {
   opacity: 0.9;
 }
 @media (prefers-reduced-motion: no-preference) {
-  .panel { transition: opacity 120ms ease, transform 120ms ease; }
+  button {
+    transition:
+      transform 140ms var(--jv-ease-out),
+      background-color 140ms ease,
+      border-color 140ms ease,
+      color 140ms ease;
+  }
+  button:active:not(:disabled) { transform: scale(0.97); }
+  .panel { transition: opacity 140ms var(--jv-ease-out), transform 140ms var(--jv-ease-out); }
+  @starting-style {
+    .panel:not([hidden]) { opacity: 0; transform: translateY(4px); }
+  }
 }
 @media (forced-colors: active) {
   .bar,

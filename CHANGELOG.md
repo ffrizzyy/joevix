@@ -3,6 +3,26 @@
 All notable changes to Joevix are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and releases use semantic versioning.
 
+## [1.0.2] — 2026-10-27
+
+### Added
+
+- Motion tokens and a design-rules document based on Emil Kowalski's design-engineering
+  principles.
+- `tests/e2e/design.spec.ts`: Playwright checks for transition timing, property specificity,
+  press feedback, hover gating, and reduced-motion behavior.
+- A primary action style for **New theme** and **Save theme**.
+
+### Changed
+
+- Buttons, tabs, theme cards, presets, role chips, segments, and switches now use strong
+  ease-out transitions and visible press feedback.
+- Hover states are scoped to fine pointers so touch devices do not show sticky hover styles.
+- Reduced motion keeps color, border, and opacity transitions while removing movement and press
+  scaling.
+- In-page edit controls now share the same press and panel motion rules.
+- Version bumped to 1.0.2.
+
 ## [1.0.1] — 2026-10-20
 
 ### Added

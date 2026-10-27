@@ -52,7 +52,7 @@ Release archives are produced by `pnpm package:release`. Each GitHub release inc
 `SHA256SUMS.txt` and `release.json`. Verify a downloaded archive before loading it:
 
 ```powershell
-Get-FileHash .\joevix-1.0.0-chrome.zip -Algorithm SHA256
+Get-FileHash .\joevix-1.0.2-chrome.zip -Algorithm SHA256
 Get-Content .\SHA256SUMS.txt
 ```
 

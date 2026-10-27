@@ -41,6 +41,7 @@ without a local server or real network. Subresources are fulfilled with `204`.
 | `accessibility.spec.ts` | axe-core on options and popup, 320px width, arrow-key tabs, focusable import |
 | `shortcuts.spec.ts`     | All three commands registered; `edit-toggle` starts and cancels a session    |
 | `security.spec.ts`      | Hostile-page isolation, edit-host text, imports, reset, delete-all, SPA      |
+| `design.spec.ts`        | Motion timing, press feedback, hover gating, reduced-motion behavior         |
 
 The browser-level shortcut keypresses themselves cannot be dispatched from Playwright; the
 suite checks registration plus the command handler's content-script path. Remap and press the
@@ -60,8 +61,15 @@ sees the lyric page. The audit must return zero WCAG A/AA violations.
 - package: **250 KB** (NFR-01);
 - content script: **40 KB gzip**.
 
-The build currently has roughly 8 KB of package headroom. Re-run the script after adding an
+The build currently has roughly 4 KB of package headroom. Re-run the script after adding an
 adapter or a dependency; CI fails if either limit is crossed.
+
+## Design and motion
+
+`tests/e2e/design.spec.ts` checks the built extension against the motion rules in
+[`docs/design.md`](./design.md): no `transition: all`, no UI transitions or animations over
+300ms, visible press feedback, hover styles scoped to fine pointers, and reduced motion that
+keeps color transitions while dropping movement.
 
 ## Security checks
 
